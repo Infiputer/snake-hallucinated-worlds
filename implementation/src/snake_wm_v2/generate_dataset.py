@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from .common import RewardConfig, set_seed, shaped_reward, utc_stamp, write_json
-from .env import ACTION_VECTORS, DOWN, LEFT, RIGHT, UP, OPPOSITE, SnakeEnv
+from .env import ACTION_VECTORS, BOARD, DOWN, INITIAL_APPLES, LEFT, RIGHT, ROCKS_SET, UP, OPPOSITE, SnakeEnv
 
 ACTION_COUNT = 4
 MAX_CONTEXT = 5
@@ -23,7 +23,28 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--death-penalty", type=float, default=-1.0)
     p.add_argument("--win-reward", type=float, default=5.0)
     p.add_argument("--progress-every", type=int, default=5000)
+    p.add_argument("--randomize-apples", action="store_true", help="sample apple positions independently per episode")
+    p.add_argument("--randomize-rocks", action="store_true", help="sample rock positions independently per episode; requires randomized apples")
+    p.add_argument("--apple-count", type=int, default=len(INITIAL_APPLES))
+    p.add_argument("--rock-count", type=int, default=len(ROCKS_SET))
     return p.parse_args()
+
+
+def sample_cells(rng: np.random.Generator, count: int, blocked: set[tuple[int, int]]) -> list[tuple[int, int]]:
+    cells = [(x, y) for y in range(BOARD) for x in range(BOARD) if (x, y) not in blocked]
+    if count > len(cells):
+        raise ValueError(f"cannot sample {count} cells with {len(blocked)} blocked cells on {BOARD}x{BOARD} board")
+    idx = rng.choice(len(cells), size=count, replace=False)
+    return [cells[int(i)] for i in idx]
+
+
+def apply_layout_randomization(env: SnakeEnv, rng: np.random.Generator, args: argparse.Namespace) -> None:
+    snake_cells = set(env.snake)
+    if args.randomize_rocks:
+        env._rock_set = set(sample_cells(rng, args.rock_count, snake_cells))
+    if args.randomize_apples:
+        blocked = set(env.snake) | set(env._rock_set)
+        env.apples = sample_cells(rng, args.apple_count, blocked)
 
 
 def safe_actions(env: SnakeEnv) -> list[int]:
@@ -77,6 +98,8 @@ def assert_no_terminal_tint(frames: list[np.ndarray]) -> None:
 
 def main() -> None:
     args = parse_args()
+    if args.randomize_rocks and not args.randomize_apples:
+        raise ValueError("--randomize-rocks requires --randomize-apples so apples cannot overlap randomized rocks")
     set_seed(args.seed)
     rng = np.random.default_rng(args.seed)
     out_dir = Path(args.out or f"runs/datasets/snake_v2_{utc_stamp()}")
@@ -100,6 +123,8 @@ def main() -> None:
             break
         env = SnakeEnv(seed=args.seed + ep)
         result = env.reset()
+        apply_layout_randomization(env, rng, args)
+        result = env._result(0.0, False)
         frames.append(result.frame.astype(np.uint8))
         frame_history = [len(frames) - 1 for _ in range(MAX_CONTEXT)]
         prev_reward = 0.0
@@ -139,7 +164,7 @@ def main() -> None:
     np.save(out_dir / "episode_ids.npy", np.asarray(episode_ids, dtype=np.int64))
     np.save(out_dir / "policy_ids.npy", np.asarray(policy_ids, dtype=np.int64))
     status_counts = {s: statuses.count(s) for s in sorted(set(statuses))}
-    write_json(out_dir / "dataset_meta.json", {"format": "indexed_npy_v2_no_terminal_overlay", "path": out_dir.as_posix(), "episodes_requested": args.episodes, "episodes_recorded": int(max(episode_ids) + 1 if episode_ids else 0), "transitions": len(actions), "frames": len(frames), "max_context": MAX_CONTEXT, "max_steps": args.max_steps, "seed": args.seed, "policies": list(policies), "reward": reward_cfg.__dict__, "status_counts": status_counts, "corner_colors": sorted([list(c) for c in set(tuple(map(int, f[0, 0])) for f in frames)])})
+    write_json(out_dir / "dataset_meta.json", {"format": "indexed_npy_v2_no_terminal_overlay", "path": out_dir.as_posix(), "episodes_requested": args.episodes, "episodes_recorded": int(max(episode_ids) + 1 if episode_ids else 0), "transitions": len(actions), "frames": len(frames), "max_context": MAX_CONTEXT, "max_steps": args.max_steps, "seed": args.seed, "policies": list(policies), "reward": reward_cfg.__dict__, "layout_randomization": {"randomize_apples": bool(args.randomize_apples), "randomize_rocks": bool(args.randomize_rocks), "apple_count": int(args.apple_count), "rock_count": int(args.rock_count), "snake_start": "fixed"}, "status_counts": status_counts, "corner_colors": sorted([list(c) for c in set(tuple(map(int, f[0, 0])) for f in frames)])})
     print(out_dir.as_posix())
     print(f"transitions={len(actions)} frames={len(frames)} status_counts={status_counts}")
 

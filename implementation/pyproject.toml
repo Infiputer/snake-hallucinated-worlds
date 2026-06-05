@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snake-wm-v2"
+version = "0.1.0"
+description = "Clean no-overlay Snake world-model experiments"
+requires-python = ">=3.10"
+
+[project.scripts]
+snake-generate-data = "snake_wm_v2.generate_dataset:main"
+snake-train-wm = "snake_wm_v2.train_event_world_model:main"
+snake-inference = "snake_wm_v2.serve_event_world_model:main"
+snake-train-cnn-agent = "snake_wm_v2.train_event_policy:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -42,6 +42,7 @@ WORLD_MODEL_SPECS = {
     "tiny": WorldModelSpec("tiny", 8, 1),
     "wm_1m": WorldModelSpec("wm_1m", 36, 2),
     "wm_2m": WorldModelSpec("wm_2m", 44, 3),
+    "wm_5m": WorldModelSpec("wm_5m", 52, 6),
 }
 
 POLICY_SPECS = {
