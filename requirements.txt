@@ -1,0 +1,8 @@
+numpy
+opencv-python-headless
+Pillow
+matplotlib
+imageio
+torch
+wandb
+wandb-workspaces

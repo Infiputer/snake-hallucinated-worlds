@@ -1,0 +1,140 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\title{Can a CNN Learn Snake in a Hallucinated Environment?\\
+\large A Small-Scale Study of Visual World-Model Exploitation and Grounding}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Interactive video world models suggest a route to training agents without querying the true environment at every step.
+This paper studies a deliberately small version of that problem: train an action-conditioned visual world model for Snake, train CNN policies only inside that learned model, and evaluate the resulting policies in the true code simulator.
+The experiment is designed to expose reward hacking rather than hide it.
+The world model predicts the next RGB frame, scalar reward, terminal probability, and an unclamped floating-point snake length from a short visual context and an action.
+Terminal states are not encoded by tinting the RGB frame; death and win signals are separate scalar targets.
+We report hallucinated return, real-simulator return, and their gap across world-model scale, context length, and CNN policy size.
+We also evaluate an iterative grounding loop in which a policy trained inside the world model generates action traces, those traces are replayed in the true simulator to collect correct visual transitions, and the existing world model is fine-tuned rather than retrained from scratch.
+\end{abstract}
+
+\section{Introduction}
+Generative interactive environments such as Genie~\cite{bruce2024genie} and real-time streaming game world models such as Matrix-Game 2.0~\cite{he2025matrixgame2} make it plausible to use learned video dynamics as training environments.
+For reinforcement learning, however, a learned environment is also an attack surface: if the policy can discover model inaccuracies that produce reward inside the model but do not transfer to the real environment, apparent progress can be negative transfer.
+
+We study this question in Snake because the true simulator is cheap, deterministic, and unambiguous.
+That lets us measure the gap between imagined performance and real performance without arguing about evaluator noise.
+The core question is not whether Snake can be solved by a CNN.
+It can.
+The question is narrower: when a CNN policy is trained only against a learned visual dynamics model, does it learn behavior that transfers back to the real simulator, or does it exploit the model?
+
+\section{Method}
+\paragraph{Environment.}
+The simulator renders a $128 \times 128 \times 3$ RGB Snake board.
+There is no HUD, score text, keyboard overlay, or terminal-state color tint.
+This matters because an earlier pilot introduced a global terminal tint, which made the visual prediction task confounded with death detection.
+In v2, terminal information is available only through the world model's scalar terminal head.
+
+\paragraph{World model.}
+The world model is action-conditioned and autoregressive.
+Given the previous $k \in \{1,2,5\}$ frames, previous reward, and the next discrete action, it predicts:
+\begin{equation}
+  \hat{x}_{t+1},\quad \hat{r}_{t+1},\quad \hat{d}_{t+1},\quad \hat{\ell}_{t+1}
+\end{equation}
+where $\hat{x}_{t+1}$ is the next RGB frame, $\hat{r}_{t+1}$ is scalar reward, $\hat{d}_{t+1}$ is a terminal logit, and $\hat{\ell}_{t+1}$ is a floating-point snake length prediction.
+The length output is intentionally not clamped, so large or implausible deviations remain measurable.
+
+\paragraph{Policy training.}
+For each frozen world model, CNN policies of three sizes are trained with PPO~\cite{schulman2017ppo} inside hallucinated rollouts.
+Episodes in the learned environment terminate when the predicted terminal probability crosses a threshold or when the rollout reaches a maximum length.
+Policies are then evaluated in both the learned world model and the true simulator.
+
+\paragraph{Grounding loop.}
+The grounding experiment is designed to approximate settings where real data are expensive but not impossible to obtain.
+After training a policy inside the world model, we execute that policy's actions in the real simulator, collect a small set of correct transitions, merge those transitions with the original random/safe/greedy dataset, and fine-tune the existing world model checkpoint.
+We repeat this loop several times and measure whether the hallucinated-real return gap shrinks.
+This is closer to deployment-time grounding than training a new model from scratch on policy-generated data.
+
+\section{Experimental setup}
+The main dataset contains 50,000 real simulator transitions from a mixture of random, safe-random, straight, and greedy policies.
+The main sweep trains two world-model sizes, three context lengths, and three CNN policy sizes, yielding 18 world-model/policy settings.
+The W\&B project is linked at \href{https://wandb.ai/anothervibecoder-i-unemplyed/snake-hallucinated-worlds-v2}{snake-hallucinated-worlds-v2}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.55\linewidth]{figures/snake_no_overlay_frame.png}
+  \caption{Example v2 frame. The board is rendered as RGB pixels only; terminal state is not painted into the frame.}
+  \label{fig:no-overlay}
+\end{figure}
+
+\section{Results}
+The tables and plots in this section are generated from synced experiment artifacts using \texttt{python -m snake\_wm\_v2.export\_paper\_assets}.
+
+\begin{table}[t]
+  \centering
+  \input{tables/main_eval_summary.tex}
+  \caption{Main transfer results. Gap is hallucinated return minus real-simulator return; a positive gap indicates the policy performed better inside the world model than in the true simulator.}
+  \label{tab:main-results}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\linewidth]{figures/hallucinated_vs_real_v2.png}
+  \caption{Hallucinated return versus real-simulator return. Points below the diagonal indicate overestimation by the learned world model.}
+  \label{fig:hallu-real}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/wm_vs_sim_rollout_v2.png}
+  \caption{Autoregressive world-model rollout against simulator frames. The difference row visualizes pixel-level drift.}
+  \label{fig:rollout}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\linewidth]{figures/wm_drift_curve_v2.png}
+  \caption{Pixel error and predicted terminal probability across an autoregressive rollout.}
+  \label{fig:drift}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \input{tables/grounding_summary.tex}
+  \caption{Iterative grounding results. Each iteration collects a small amount of real simulator data using the previous policy's actions and fine-tunes the existing world model.}
+  \label{tab:grounding}
+\end{table}
+
+\section{Discussion}
+This study is intentionally small, but the exploitation mechanism is the point.
+If a CNN trained inside a learned Snake model obtains positive hallucinated return and negative real return, then the learned environment is not just inaccurate; it is exploitable by the policy optimizer.
+The most important quantity is therefore not frame MAE alone, but the transfer gap between imagined and real returns.
+
+The grounding loop tests a practical mitigation.
+If the policy finds a model exploit, replaying its actions in the true simulator reveals the correct transitions near that exploit.
+Fine-tuning the world model on a small number of these transitions should, in principle, make the exploit harder to repeat.
+The experiment does not prove that this scales to humanoids or open-world games.
+It provides a controlled measurement harness for the same mechanism: train in imagination, evaluate in reality, then ground the model where the policy drove it out of distribution.
+
+\section{Limitations}
+Snake is discrete, low-dimensional, and rendered from complete state.
+The results should not be interpreted as evidence that small CNN policies or small latent world models are sufficient for richer domains.
+The dataset is also policy-biased; random/safe/greedy trajectories do not cover every state that a trained optimizer may induce.
+Finally, the current experiments use a single simulator and a modest compute budget, so conclusions should be framed as a reproducible case study rather than a general scaling law.
+
+\section{Reproducibility}
+The code, configs, generated figures, and selected result artifacts are packaged in the accompanying repository.
+The main config is \texttt{configs/focused\_v2.json}.
+The local smoke test is \texttt{scripts/local\_smoke.sh}.
+Experiment metrics are logged to the linked W\&B project.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
