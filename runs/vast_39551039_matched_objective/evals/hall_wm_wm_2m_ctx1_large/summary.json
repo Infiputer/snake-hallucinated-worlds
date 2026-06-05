@@ -1,0 +1,21 @@
+{
+  "csv": "runs/matched_objective_sweep/evals/hall_wm_wm_2m_ctx1_large/episodes.csv",
+  "done_rate": 1.0,
+  "episodes": 100,
+  "mean_return": -1.3392000433243811,
+  "mean_steps": 14.35,
+  "mode": "hallucinated",
+  "policy": "runs/matched_objective_sweep/policies/wm_wm_2m_ctx1_large/latest.pt",
+  "policy_params": 4090373,
+  "policy_variant": "large",
+  "reward_mode": "wm",
+  "world_model": {
+    "context": 1,
+    "spec": {
+      "base_channels": 44,
+      "latent_blocks": 3,
+      "name": "wm_2m"
+    },
+    "variant": "wm_2m"
+  }
+}

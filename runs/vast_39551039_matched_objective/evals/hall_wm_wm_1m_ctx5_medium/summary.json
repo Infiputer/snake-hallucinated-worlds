@@ -1,0 +1,21 @@
+{
+  "csv": "runs/matched_objective_sweep/evals/hall_wm_wm_1m_ctx5_medium/episodes.csv",
+  "done_rate": 1.0,
+  "episodes": 100,
+  "mean_return": 0.44803994115442036,
+  "mean_steps": 84.59,
+  "mode": "hallucinated",
+  "policy": "runs/matched_objective_sweep/policies/wm_wm_1m_ctx5_medium/latest.pt",
+  "policy_params": 1026821,
+  "policy_variant": "medium",
+  "reward_mode": "wm",
+  "world_model": {
+    "context": 5,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}

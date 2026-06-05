@@ -23,6 +23,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--grounding-summary", default="runs/vast_39487331_sync/runs/focused_v2/grounding/grounding_summary.csv")
     p.add_argument("--scalar-summary", default="runs/vast_39541409_reward_ablation/scalar_consistency_summary.json")
     p.add_argument("--reward-objective-ablation", default="runs/vast_39541409_reward_ablation/reward_objective_ablation.csv")
+    p.add_argument("--matched-objective-summary", default="runs/matched_objective_sweep/objective_eval_summary.csv")
     p.add_argument("--out", default="paper/wandb_report_url.txt")
     p.add_argument("--title", default="Snake Hallucinated Worlds")
     p.add_argument("--enable-share-link", action="store_true")
@@ -64,6 +65,42 @@ def markdown_table(rows: list[dict[str, str]], cols: list[str], max_rows: int = 
             vals.append(fmt(val) if col in {"hallucinated_return", "real_return", "gap", "real_apples", "real_death_rate", "collected_transitions", "total_policy_collected_transitions", "hallucinated_reward_return", "hallucinated_done_rate", "real_mean_steps"} else val)
         body.append("| " + " | ".join(vals) + " |")
     return "\n".join([header, sep, *body])
+
+
+def matched_summary_markdown(rows: list[dict[str, str]]) -> str:
+    if not rows:
+        return "_Matched objective sweep pending._"
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for row in rows:
+        grouped.setdefault(row.get("objective", ""), []).append(row)
+    lines = ["| objective | cells | mean real apples | mean real return | mean transfer gap |", "| --- | --- | --- | --- | --- |"]
+    for objective in ("wm", "length_delta"):
+        selected = grouped.get(objective, [])
+        if not selected:
+            continue
+        cells = len(selected)
+        apples = sum(float(r.get("real_apples", 0.0)) for r in selected) / cells
+        real_return = sum(float(r.get("real_return", 0.0)) for r in selected) / cells
+        gap = sum(float(r.get("gap", 0.0)) for r in selected) / cells
+        label = "Predicted reward" if objective == "wm" else "Unclamped length delta"
+        lines.append(f"| {label} | {cells} | {fmt(apples)} | {fmt(real_return)} | {fmt(gap)} |")
+    return "\n".join(lines)
+
+
+def matched_comparison_markdown(rows: list[dict[str, str]], max_rows: int = 18) -> str:
+    reward = {(r.get("world_model", ""), r.get("context", ""), r.get("policy", "")): r for r in rows if r.get("objective") == "wm"}
+    length = {(r.get("world_model", ""), r.get("context", ""), r.get("policy", "")): r for r in rows if r.get("objective") == "length_delta"}
+    keys = [k for k in reward if k in length]
+    if not keys:
+        return "_Matched comparison pending._"
+    policy_order = {"small": 0, "medium": 1, "large": 2}
+    keys = sorted(keys, key=lambda k: (k[0], int(k[1]), policy_order.get(k[2], 99)))[:max_rows]
+    lines = ["| world_model | context | policy | reward apples | length apples | delta |", "| --- | --- | --- | --- | --- | --- |"]
+    for key in keys:
+        rw = float(reward[key].get("real_apples", 0.0))
+        ln = float(length[key].get("real_apples", 0.0))
+        lines.append(f"| {key[0]} | {key[1]} | {key[2]} | {fmt(rw)} | {fmt(ln)} | {fmt(rw - ln)} |")
+    return "\n".join(lines)
 
 
 def scalar_markdown(summary: dict[str, object]) -> str:
@@ -122,6 +159,7 @@ def main() -> None:
     grounding_rows = read_rows(Path(args.grounding_summary))
     scalar_summary = read_json(Path(args.scalar_summary))
     objective_rows = read_rows(Path(args.reward_objective_ablation))
+    matched_rows = read_rows(Path(args.matched_objective_summary))
     project_url = f"https://wandb.ai/{args.entity}/{args.project}"
     best = eval_rows[0] if eval_rows else None
     description = "CNN policies trained inside action-conditioned visual Snake world models, then evaluated in the real simulator."
@@ -141,6 +179,10 @@ def main() -> None:
             ),
         ])
     blocks.extend([
+        wr.H2("Matched objective sweep"),
+        wr.P("For every world-model size, context length, and CNN size, the matched sweep trains one policy on predicted scalar reward and one policy on the raw unclamped length-head delta. This is the apples-to-apples comparison requested for the paper tables."),
+        wr.P(matched_summary_markdown(matched_rows)),
+        wr.P(matched_comparison_markdown(matched_rows)),
         wr.H2("Grounding loop"),
         wr.P("Grounding is periodic, not continuous: collect real simulator transitions, fine-tune the existing world model, then freeze it while PPO trains the next policy. Real-data minutes below assume 30 FPS."),
         wr.P(grounding_markdown(grounding_rows)),

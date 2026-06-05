@@ -37,6 +37,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--length-reward-scale", type=float, default=1.0)
     p.add_argument("--wm-reward-scale", type=float, default=1.0)
     p.add_argument("--death-penalty", type=float, default=1.0)
+    p.add_argument("--length-delta-clamp", type=float, default=0.0, help="Clamp absolute length delta if >0; 0 keeps the length-head delta unclamped")
+    p.add_argument("--ppo-reward-clamp", type=float, default=5.0, help="Clamp absolute PPO reward if >0; 0 disables final reward clipping")
     p.add_argument("--done-threshold", type=float, default=0.8)
     p.add_argument("--max-episode-steps", type=int, default=256)
     p.add_argument("--seed", type=int, default=123)
@@ -58,7 +60,22 @@ def load_world_model(path: str | Path, device: torch.device) -> LatentSnakeWorld
 
 
 class HallucinatedBatchEnv:
-    def __init__(self, model: LatentSnakeWorldModel, dataset_path: str | Path, num_envs: int, max_episode_steps: int, done_threshold: float, device: torch.device, seed: int, reward_mode: str = "wm", length_reward_scale: float = 1.0, wm_reward_scale: float = 1.0, death_penalty: float = 1.0):
+    def __init__(
+        self,
+        model: LatentSnakeWorldModel,
+        dataset_path: str | Path,
+        num_envs: int,
+        max_episode_steps: int,
+        done_threshold: float,
+        device: torch.device,
+        seed: int,
+        reward_mode: str = "wm",
+        length_reward_scale: float = 1.0,
+        wm_reward_scale: float = 1.0,
+        death_penalty: float = 1.0,
+        length_delta_clamp: float = 0.0,
+        ppo_reward_clamp: float = 5.0,
+    ):
         self.model = model
         self.num_envs = int(num_envs)
         self.max_episode_steps = int(max_episode_steps)
@@ -68,6 +85,8 @@ class HallucinatedBatchEnv:
         self.length_reward_scale = float(length_reward_scale)
         self.wm_reward_scale = float(wm_reward_scale)
         self.death_penalty = float(death_penalty)
+        self.length_delta_clamp = float(length_delta_clamp)
+        self.ppo_reward_clamp = float(ppo_reward_clamp)
         self.rng = np.random.default_rng(seed)
         dataset_path = Path(dataset_path)
         self.frames = np.load(dataset_path / "frames.npy", mmap_mode="r")
@@ -98,9 +117,13 @@ class HallucinatedBatchEnv:
     @torch.no_grad()
     def step(self, action: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         out = self.model(self.context, self.prev_reward, action)
-        wm_reward = out["reward"].clamp(-5.0, 5.0)
+        wm_reward = out["reward"]
+        if self.ppo_reward_clamp > 0:
+            wm_reward = wm_reward.clamp(-self.ppo_reward_clamp, self.ppo_reward_clamp)
         next_length = out["length"]
-        length_delta = (next_length - self.length_estimate).clamp(-2.0, 2.0)
+        length_delta = next_length - self.length_estimate
+        if self.length_delta_clamp > 0:
+            length_delta = length_delta.clamp(-self.length_delta_clamp, self.length_delta_clamp)
         done_prob = torch.sigmoid(out["done_logit"])
         self.steps += 1
         done = (done_prob > self.done_threshold) | (self.steps >= self.max_episode_steps)
@@ -110,7 +133,8 @@ class HallucinatedBatchEnv:
             reward = self.length_reward_scale * length_delta - self.death_penalty * done.float()
         else:
             reward = self.wm_reward_scale * wm_reward + self.length_reward_scale * length_delta - self.death_penalty * done.float()
-        reward = reward.clamp(-5.0, 5.0)
+        if self.ppo_reward_clamp > 0:
+            reward = reward.clamp(-self.ppo_reward_clamp, self.ppo_reward_clamp)
         next_frame = out["frame"].detach()
         self.context = torch.cat([self.context[:, 1:], next_frame.unsqueeze(1)], dim=1) if self.model.context > 1 else next_frame.unsqueeze(1)
         self.prev_reward = reward.detach()
@@ -136,7 +160,21 @@ def main() -> None:
     if cfg.init_policy:
         init = torch.load(cfg.init_policy, map_location=device)
         policy.load_state_dict(init["policy_state_dict"])
-    env = HallucinatedBatchEnv(world_model, cfg.dataset, cfg.num_envs, cfg.max_episode_steps, cfg.done_threshold, device, cfg.seed, cfg.reward_mode, cfg.length_reward_scale, cfg.wm_reward_scale, cfg.death_penalty)
+    env = HallucinatedBatchEnv(
+        world_model,
+        cfg.dataset,
+        cfg.num_envs,
+        cfg.max_episode_steps,
+        cfg.done_threshold,
+        device,
+        cfg.seed,
+        cfg.reward_mode,
+        cfg.length_reward_scale,
+        cfg.wm_reward_scale,
+        cfg.death_penalty,
+        cfg.length_delta_clamp,
+        cfg.ppo_reward_clamp,
+    )
     out_dir = Path(cfg.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     run = wandb.init(name=out_dir.name, config=vars(cfg), **wandb_kwargs(cfg.project, cfg.wandb_mode))

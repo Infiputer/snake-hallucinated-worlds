@@ -24,6 +24,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--episodes", type=int, default=100)
     p.add_argument("--max-steps", type=int, default=256)
     p.add_argument("--done-threshold", type=float, default=0.8)
+    p.add_argument("--reward-mode", choices=("wm", "length_delta", "mixed"), default="wm")
+    p.add_argument("--length-reward-scale", type=float, default=1.0)
+    p.add_argument("--wm-reward-scale", type=float, default=1.0)
+    p.add_argument("--death-penalty", type=float, default=1.0)
+    p.add_argument("--length-delta-clamp", type=float, default=0.0)
+    p.add_argument("--ppo-reward-clamp", type=float, default=5.0)
     p.add_argument("--sample", action="store_true")
     p.add_argument("--seed", type=int, default=999)
     return p.parse_args()
@@ -77,7 +83,21 @@ def eval_hallucinated(policy: CNNPolicy, cfg: argparse.Namespace, device: torch.
     if not cfg.world_model or not cfg.dataset:
         raise ValueError("hallucinated mode requires --world-model and --dataset")
     wm = load_world_model(cfg.world_model, device)
-    env = HallucinatedBatchEnv(wm, cfg.dataset, 1, cfg.max_steps, cfg.done_threshold, device, cfg.seed)
+    env = HallucinatedBatchEnv(
+        wm,
+        cfg.dataset,
+        1,
+        cfg.max_steps,
+        cfg.done_threshold,
+        device,
+        cfg.seed,
+        cfg.reward_mode,
+        cfg.length_reward_scale,
+        cfg.wm_reward_scale,
+        cfg.death_penalty,
+        cfg.length_delta_clamp,
+        cfg.ppo_reward_clamp,
+    )
     rows = []
     for ep in range(cfg.episodes):
         env.reset(torch.tensor([0], device=device))
@@ -89,7 +109,7 @@ def eval_hallucinated(policy: CNNPolicy, cfg: argparse.Namespace, device: torch.
             if bool(done.item()):
                 break
         rows.append({"episode": ep, "return": total_reward, "steps": step + 1, "done": int(bool(done.item()))})
-    summary = {"mode": "hallucinated", "episodes": cfg.episodes, "mean_return": float(np.mean([r["return"] for r in rows])), "mean_steps": float(np.mean([r["steps"] for r in rows])), "done_rate": float(np.mean([r["done"] for r in rows]))}
+    summary = {"mode": "hallucinated", "reward_mode": cfg.reward_mode, "episodes": cfg.episodes, "mean_return": float(np.mean([r["return"] for r in rows])), "mean_steps": float(np.mean([r["steps"] for r in rows])), "done_rate": float(np.mean([r["done"] for r in rows]))}
     return rows, summary
 
 

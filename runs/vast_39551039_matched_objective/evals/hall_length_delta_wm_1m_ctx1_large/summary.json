@@ -1,0 +1,21 @@
+{
+  "csv": "runs/matched_objective_sweep/evals/hall_length_delta_wm_1m_ctx1_large/episodes.csv",
+  "done_rate": 1.0,
+  "episodes": 100,
+  "mean_return": 10.300481281280518,
+  "mean_steps": 27.95,
+  "mode": "hallucinated",
+  "policy": "runs/matched_objective_sweep/policies/length_delta_wm_1m_ctx1_large/latest.pt",
+  "policy_params": 4090373,
+  "policy_variant": "large",
+  "reward_mode": "length_delta",
+  "world_model": {
+    "context": 1,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}

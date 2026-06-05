@@ -65,13 +65,17 @@ Although a single Snake frame contains most of the board state, extra context ma
 For each frozen world model, CNN policies of three sizes are trained with PPO~\cite{schulman2017ppo} inside hallucinated rollouts.
 Episodes in the learned environment end when the predicted death probability crosses a threshold or when the rollout reaches a maximum length.
 Policies are then evaluated in both the learned world model and the true simulator.
+The matched objective sweep trains two policies for each world-model/context/CNN cell.
+The first policy optimizes the world model's scalar reward head $\hat{r}_t$.
+The second policy optimizes the raw floating-point length-head change $\hat{\ell}_{t+1}-\hat{\ell}_t$ with no length-delta clamp.
+The two resulting tables therefore have the same rows and columns, differing only in the PPO objective used during hallucinated training.
 
 \paragraph{Scalar objective ablation.}
 Snake has a useful internal consistency check: the initial snake length is 3, and under the raw apple reward the true length after a rollout equals $3 + \sum_t r_t$.
 We therefore compare two model-derived length estimates: the direct floating-point length head $\hat{\ell}_t$, and the reward-integrated estimate $3 + \sum_t \hat{r}_t$.
 This diagnostic does not decide which signal PPO should optimize; it only checks which scalar is more numerically consistent with real simulator length under fixed actions.
-We then freeze one world model checkpoint and train otherwise identical medium CNN policies with three PPO objectives: predicted reward, predicted length change $\hat{\ell}_{t+1}-\hat{\ell}_t$, and a mixed objective.
-This separates scalar prediction quality from policy-transfer performance.
+We also include a smaller fixed-checkpoint pilot with three PPO objectives: predicted reward, predicted length change, and a mixed objective.
+The full matched sweep is the main comparison between scalar-reward training and length-head training.
 
 \paragraph{Grounding loop.}
 The grounding experiment is designed to approximate settings where real data are expensive but not impossible to obtain.
@@ -86,7 +90,7 @@ One completed round collected fewer transitions because the policy episodes ende
 
 \section{Experimental setup}
 The main dataset contains 50,000 real simulator transitions from a mixture of random, safe-random, straight, and greedy policies.
-The main sweep trains two world-model sizes, three context lengths, and three CNN policy sizes, yielding 18 world-model/policy settings.
+The matched objective sweep trains two world-model sizes, three context lengths, and three CNN policy sizes under two PPO objectives, yielding 36 world-model/policy/objective settings.
 The public W\&B report is linked from the accompanying repository.
 
 \begin{figure}[t]
@@ -101,16 +105,51 @@ The tables and plots in this section are generated from the synced experiment ar
 
 \begin{table}[t]
   \centering
-  \input{tables/main_eval_summary.tex}
-  \caption{Main transfer results. Gap is hallucinated return minus real-simulator return; a positive gap indicates the policy performed better inside the world model than in the true simulator.}
-  \label{tab:main-results}
+  \input{tables/matched_reward_objective_summary.tex}
+  \caption{Matched sweep trained with the world model's scalar reward head. Gap is hallucinated objective return minus real-simulator return.}
+  \label{tab:matched-reward}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \input{tables/matched_length_objective_summary.tex}
+  \caption{Matched sweep trained with the unclamped floating-point length-head change $\hat{\ell}_{t+1}-\hat{\ell}_t$. Rows and columns match Table~\ref{tab:matched-reward}.}
+  \label{tab:matched-length}
 \end{table}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/hallucinated_vs_real.png}
-  \caption{Hallucinated return versus real-simulator return. The diagonal marks equal return. Points below the diagonal have hallucinated return greater than real return, while points above the diagonal transfer better than the model predicted.}
-  \label{fig:hallu-real}
+  \includegraphics[width=\linewidth]{figures/matched_objective_context_scaling.png}
+  \caption{Real-simulator apple count as context length changes, averaged across CNN sizes. Separate curves compare scalar-reward PPO and unclamped length-head PPO for each world-model size.}
+  \label{fig:objective-context-scaling}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/matched_objective_policy_scaling.png}
+  \caption{Real-simulator apple count as CNN policy size changes, averaged across world-model sizes and contexts.}
+  \label{fig:objective-policy-scaling}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \input{tables/matched_objective_comparison.tex}
+  \caption{Per-cell real-apple comparison between scalar-reward PPO and unclamped length-head PPO. Positive delta means scalar-reward PPO transferred better.}
+  \label{tab:matched-objective-comparison}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/matched_objective_delta_heatmap.png}
+  \caption{Real-apple advantage of scalar-reward PPO over unclamped length-head PPO for each matched world-model/context/CNN cell.}
+  \label{fig:objective-delta-heatmap}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.58\linewidth]{figures/matched_objective_scatter.png}
+  \caption{Matched-cell scatter plot comparing real apples after scalar-reward PPO and unclamped length-head PPO. The diagonal indicates equal transfer.}
+  \label{fig:objective-scatter}
 \end{figure}
 
 \begin{figure}[t]

@@ -1,0 +1,24 @@
+{
+  "csv": "runs/matched_objective_sweep/evals/real_wm_wm_1m_ctx2_small/episodes.csv",
+  "death_rate": 1.0,
+  "episodes": 100,
+  "max_length": 15.0,
+  "mean_apples": 12.0,
+  "mean_length": 15.0,
+  "mean_return": 11.0,
+  "mean_steps": 138.0,
+  "mode": "real",
+  "policy": "runs/matched_objective_sweep/policies/wm_wm_1m_ctx2_small/latest.pt",
+  "policy_params": 115973,
+  "policy_variant": "small",
+  "win_rate": 0.0,
+  "world_model": {
+    "context": 2,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}
