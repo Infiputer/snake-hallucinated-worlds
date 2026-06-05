@@ -18,7 +18,7 @@
 \begin{abstract}
 Interactive video world models suggest a route to training agents without querying the true environment at every step.
 This paper studies a deliberately small version of that problem: train an action-conditioned visual world model for Snake, train CNN policies only inside that learned model, and evaluate the resulting policies in the true code simulator.
-The experiment is designed to expose reward hacking rather than hide it.
+The experiment is designed to expose transfer gaps and model-exploitation behavior rather than hide them.
 The world model predicts the next RGB frame, scalar reward, terminal probability, and an unclamped floating-point snake length from a short visual context and an action.
 Terminal states are not encoded by tinting the RGB frame; death and win signals are separate scalar targets.
 We report hallucinated return, real-simulator return, and their gap across world-model scale, context length, and CNN policy size.
