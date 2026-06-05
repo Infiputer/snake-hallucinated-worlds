@@ -1,0 +1,24 @@
+{
+  "csv": "runs/focused_v2/grounding/evals/real_iter_01_small/episodes.csv",
+  "death_rate": 1.0,
+  "episodes": 100,
+  "max_length": 3.0,
+  "mean_apples": 0.0,
+  "mean_length": 3.0,
+  "mean_return": -1.0,
+  "mean_steps": 11.0,
+  "mode": "real",
+  "policy": "runs/focused_v2/grounding/policies/iter_01_small/latest.pt",
+  "policy_params": 115973,
+  "policy_variant": "small",
+  "win_rate": 0.0,
+  "world_model": {
+    "context": 5,
+    "spec": {
+      "base_channels": 44,
+      "latent_blocks": 3,
+      "name": "wm_2m"
+    },
+    "variant": "wm_2m"
+  }
+}

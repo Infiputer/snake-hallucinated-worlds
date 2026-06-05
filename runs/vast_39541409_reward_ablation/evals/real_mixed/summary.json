@@ -1,0 +1,24 @@
+{
+  "csv": "runs/reward_length_ablation/evals/real_mixed/episodes.csv",
+  "death_rate": 1.0,
+  "episodes": 100,
+  "max_length": 4.0,
+  "mean_apples": 1.0,
+  "mean_length": 4.0,
+  "mean_return": 0.0,
+  "mean_steps": 19.0,
+  "mode": "real",
+  "policy": "runs/reward_length_ablation/policies/medium_mixed/latest.pt",
+  "policy_params": 1026821,
+  "policy_variant": "medium",
+  "win_rate": 0.0,
+  "world_model": {
+    "context": 5,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}

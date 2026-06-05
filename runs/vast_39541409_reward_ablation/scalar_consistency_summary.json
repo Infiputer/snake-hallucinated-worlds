@@ -1,0 +1,14 @@
+{
+  "direct_length_apple_step_mae": 2.5617127418518066,
+  "direct_length_better_episode_count": 86.0,
+  "direct_length_better_step_fraction": 0.12350329611193327,
+  "direct_length_step_mae": 2.0392987728118896,
+  "direct_length_step_median_ae": 1.491026759147644,
+  "episodes": 200.0,
+  "reward_integrated_apple_step_mae": 1.7403923273086548,
+  "reward_integrated_better_episode_count": 114.0,
+  "reward_integrated_better_step_fraction": 0.8764967038880668,
+  "reward_integrated_step_mae": 1.1578158140182495,
+  "reward_integrated_step_median_ae": 0.5449001789093018,
+  "steps": 7433.0
+}

@@ -1,0 +1,31 @@
+{
+  "args": {
+    "batch_size": 64,
+    "context": 1,
+    "dataset": "runs/datasets/snake_v2_main",
+    "init_checkpoint": null,
+    "lr": 0.0003,
+    "num_workers": 2,
+    "out": "runs/focused_v2/world_models/wm_2m_ctx1",
+    "project": "snake-hallucinated-worlds-v2",
+    "save_every": 1000,
+    "seed": 123,
+    "steps": 20000,
+    "val_every": 500,
+    "variant": "wm_2m",
+    "wandb_mode": "online"
+  },
+  "dataset": "runs/datasets/snake_v2_main",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "model_config": {
+    "context": 1,
+    "spec": {
+      "base_channels": 44,
+      "latent_blocks": 3,
+      "name": "wm_2m"
+    },
+    "variant": "wm_2m"
+  },
+  "param_count": 2233974
+}

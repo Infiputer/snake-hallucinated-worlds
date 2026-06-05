@@ -1,0 +1,20 @@
+{
+  "csv": "runs/focused_v2/evals/hall_wm_1m_ctx1_large/episodes.csv",
+  "done_rate": 1.0,
+  "episodes": 100,
+  "mean_return": 0.35590354844927785,
+  "mean_steps": 6.88,
+  "mode": "hallucinated",
+  "policy": "runs/focused_v2/policies/wm_1m_ctx1_large/latest.pt",
+  "policy_params": 4090373,
+  "policy_variant": "large",
+  "world_model": {
+    "context": 1,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "args": {
+    "dataset": "runs/datasets/snake_v2_main",
+    "diagnostic_episodes_per_mode": 50,
+    "diagnostic_max_steps": 96,
+    "eval_episodes": 100,
+    "eval_max_steps": 256,
+    "minibatch_size": 64,
+    "num_envs": 32,
+    "policy": "medium",
+    "project": "snake-hallucinated-worlds-v2",
+    "rollout_steps": 64,
+    "root": "runs/reward_length_ablation",
+    "seed": 20260605,
+    "skip_existing": false,
+    "updates": 300,
+    "wandb_mode": "online",
+    "world_model": "runs/vast_39487331_sync/runs/focused_v2/world_models/wm_1m_ctx5/latest.pt"
+  },
+  "reward_objective_ablation": [
+    {
+      "hallucinated_done_rate": 1.0,
+      "hallucinated_reward_return": 3.575818693637848,
+      "policy": "medium",
+      "policy_dir": "runs/reward_length_ablation/policies/medium_wm",
+      "real_apples": 2.0,
+      "real_death_rate": 1.0,
+      "real_mean_steps": 17.0,
+      "real_return": 1.0,
+      "reward_mode": "wm"
+    },
+    {
+      "hallucinated_done_rate": 1.0,
+      "hallucinated_reward_return": 1.1355901411920786,
+      "policy": "medium",
+      "policy_dir": "runs/reward_length_ablation/policies/medium_length_delta",
+      "real_apples": 1.0,
+      "real_death_rate": 1.0,
+      "real_mean_steps": 9.0,
+      "real_return": 0.0,
+      "reward_mode": "length_delta"
+    },
+    {
+      "hallucinated_done_rate": 1.0,
+      "hallucinated_reward_return": 2.0760664726048708,
+      "policy": "medium",
+      "policy_dir": "runs/reward_length_ablation/policies/medium_mixed",
+      "real_apples": 1.0,
+      "real_death_rate": 1.0,
+      "real_mean_steps": 19.0,
+      "real_return": 0.0,
+      "reward_mode": "mixed"
+    }
+  ],
+  "scalar_consistency": {
+    "direct_length_apple_step_mae": 2.5617127418518066,
+    "direct_length_better_episode_count": 86.0,
+    "direct_length_better_step_fraction": 0.12350329611193327,
+    "direct_length_step_mae": 2.0392987728118896,
+    "direct_length_step_median_ae": 1.491026759147644,
+    "episodes": 200.0,
+    "reward_integrated_apple_step_mae": 1.7403923273086548,
+    "reward_integrated_better_episode_count": 114.0,
+    "reward_integrated_better_step_fraction": 0.8764967038880668,
+    "reward_integrated_step_mae": 1.1578158140182495,
+    "reward_integrated_step_median_ae": 0.5449001789093018,
+    "steps": 7433.0
+  }
+}

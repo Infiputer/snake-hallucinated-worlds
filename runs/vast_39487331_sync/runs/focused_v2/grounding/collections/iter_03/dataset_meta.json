@@ -1,0 +1,30 @@
+{
+  "corner_colors": [
+    [
+      170,
+      215,
+      81
+    ]
+  ],
+  "episodes_recorded": 34,
+  "episodes_requested": 40,
+  "format": "indexed_npy_v2_policy_collection_no_terminal_overlay",
+  "frames": 1034,
+  "max_context": 5,
+  "max_steps": 256,
+  "path": "runs/focused_v2/grounding/collections/iter_03",
+  "reward": {
+    "apple_reward": 1.0,
+    "death_penalty": -1.0,
+    "win_reward": 5.0
+  },
+  "sample": false,
+  "seed": 8003,
+  "source_policy": "runs/focused_v2/grounding/policies/iter_02_small/latest.pt",
+  "source_policy_variant": "small",
+  "status_counts": {
+    "dead": 33,
+    "play": 967
+  },
+  "transitions": 1000
+}

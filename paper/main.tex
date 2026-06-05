@@ -19,8 +19,8 @@
 Interactive video world models suggest a route to training agents without querying the true environment at every step.
 This paper studies a deliberately small version of that problem: train an action-conditioned visual world model for Snake, train CNN policies only inside that learned model, and evaluate the resulting policies in the true code simulator.
 The experiment is designed to expose transfer gaps and model-exploitation behavior rather than hide them.
-The world model predicts the next RGB frame, scalar reward, terminal probability, and an unclamped floating-point snake length from a short visual context and an action.
-Terminal states are not encoded by tinting the RGB frame; death and win signals are separate scalar targets.
+The world model predicts the next RGB frame, scalar reward, death probability, and an unclamped floating-point snake length from a short visual context and an action.
+The rendered frame contains only the game board; reward, episode end, and snake length are predicted as separate scalar outputs.
 We report hallucinated return, real-simulator return, and their gap across world-model scale, context length, and CNN policy size.
 We also evaluate an iterative grounding loop in which a policy trained inside the world model generates action traces, those traces are replayed in the true simulator to collect correct visual transitions, and the existing world model is fine-tuned rather than retrained from scratch.
 \end{abstract}
@@ -38,9 +38,16 @@ The question is narrower: when a CNN policy is trained only against a learned vi
 \section{Method}
 \paragraph{Environment.}
 The simulator renders a $128 \times 128 \times 3$ RGB Snake board.
-There is no HUD, score text, keyboard overlay, or terminal-state color tint.
-This matters because an earlier pilot introduced a global terminal tint, which made the visual prediction task confounded with death detection.
-In v2, terminal information is available only through the world model's scalar terminal head.
+The image contains just the game: checkerboard board, rocks, apples, and snake.
+There is no HUD, score text, keyboard overlay, or extra visual marker for death or win.
+Episode status is supervised separately: the world model predicts scalar reward, whether the episode has ended, and snake length through non-visual heads.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/snake_environment_sequence.png}
+  \caption{Simulator-only environment sequence. The frames show the initial board, movement toward an apple, eating an apple, and a self-intersection episode ending. These images come from the true simulator, not the learned world model.}
+  \label{fig:environment-sequence}
+\end{figure}
 
 \paragraph{World model.}
 The world model is action-conditioned and autoregressive.
@@ -48,34 +55,49 @@ Given the previous $k \in \{1,2,5\}$ frames, previous reward, and the next discr
 \begin{equation}
   \hat{x}_{t+1},\quad \hat{r}_{t+1},\quad \hat{d}_{t+1},\quad \hat{\ell}_{t+1}
 \end{equation}
-where $\hat{x}_{t+1}$ is the next RGB frame, $\hat{r}_{t+1}$ is scalar reward, $\hat{d}_{t+1}$ is a terminal logit, and $\hat{\ell}_{t+1}$ is a floating-point snake length prediction.
+where $\hat{x}_{t+1}$ is the next RGB frame, $\hat{r}_{t+1}$ is scalar reward, $\hat{d}_{t+1}$ is a death logit, and $\hat{\ell}_{t+1}$ is a floating-point snake length prediction.
 The length output is intentionally not clamped, so large or implausible deviations remain measurable.
+The model always predicts only one next frame at a time.
+The context length $k$ controls how many past frames are given as input: $k=1$ is the previous-frame-only setting, while $k=2$ and $k=5$ test whether short visual history helps the model infer recent motion, action effects, and autoregressive rollout stability.
+Although a single Snake frame contains most of the board state, extra context may still help because the simulator handles direction-dependent actions such as ignored reverse moves.
 
 \paragraph{Policy training.}
 For each frozen world model, CNN policies of three sizes are trained with PPO~\cite{schulman2017ppo} inside hallucinated rollouts.
-Episodes in the learned environment terminate when the predicted terminal probability crosses a threshold or when the rollout reaches a maximum length.
+Episodes in the learned environment end when the predicted death probability crosses a threshold or when the rollout reaches a maximum length.
 Policies are then evaluated in both the learned world model and the true simulator.
+
+\paragraph{Scalar objective ablation.}
+Snake has a useful internal consistency check: the initial snake length is 3, and under the raw apple reward the true length after a rollout equals $3 + \sum_t r_t$.
+We therefore compare two model-derived length estimates: the direct floating-point length head $\hat{\ell}_t$, and the reward-integrated estimate $3 + \sum_t \hat{r}_t$.
+This diagnostic does not decide which signal PPO should optimize; it only checks which scalar is more numerically consistent with real simulator length under fixed actions.
+We then freeze one world model checkpoint and train otherwise identical medium CNN policies with three PPO objectives: predicted reward, predicted length change $\hat{\ell}_{t+1}-\hat{\ell}_t$, and a mixed objective.
+This separates scalar prediction quality from policy-transfer performance.
 
 \paragraph{Grounding loop.}
 The grounding experiment is designed to approximate settings where real data are expensive but not impossible to obtain.
 After training a policy inside the world model, we execute that policy's actions in the real simulator, collect a small set of correct transitions, merge those transitions with the original random/safe/greedy dataset, and fine-tune the existing world model checkpoint.
 We repeat this loop several times and measure whether the hallucinated-real return gap shrinks.
 This is closer to deployment-time grounding than training a new model from scratch on policy-generated data.
+Ignoring initial pretraining, each grounding round collects at most 1000 new real simulator transitions before policy training resumes.
+At 30 frames per second, 1000 transitions correspond to roughly 0.56 minutes of newly collected real data.
+The following policy-training phase uses 300 PPO updates with 32 learned environments and 64 rollout steps, or 614{,}400 imagined transitions.
+This corresponds to roughly 614 imagined transitions per new real transition when the collection cap is reached.
+One completed round collected fewer transitions because the policy episodes ended early, so its imagined/real ratio is larger.
 
 \section{Experimental setup}
 The main dataset contains 50,000 real simulator transitions from a mixture of random, safe-random, straight, and greedy policies.
 The main sweep trains two world-model sizes, three context lengths, and three CNN policy sizes, yielding 18 world-model/policy settings.
-The W\&B project is linked at \href{https://wandb.ai/anothervibecoder-i-unemplyed/snake-hallucinated-worlds-v2}{snake-hallucinated-worlds-v2}.
+The public W\&B report is linked from the accompanying repository.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.55\linewidth]{figures/snake_no_overlay_frame.png}
-  \caption{Example v2 frame. The board is rendered as RGB pixels only; terminal state is not painted into the frame.}
-  \label{fig:no-overlay}
+  \includegraphics[width=0.55\linewidth]{figures/snake_simulator_frame.png}
+  \caption{Example simulator frame. The rendered image contains the game board, rocks, apples, and snake. Episode status and reward are not written into the image.}
+  \label{fig:example-frame}
 \end{figure}
 
 \section{Results}
-The tables and plots in this section are generated from synced experiment artifacts using \texttt{python -m snake\_wm\_v2.export\_paper\_assets}.
+The tables and plots in this section are generated from the synced experiment artifacts by the repository's artifact-export script.
 
 \begin{table}[t]
   \centering
@@ -86,21 +108,21 @@ The tables and plots in this section are generated from synced experiment artifa
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.75\linewidth]{figures/hallucinated_vs_real_v2.png}
-  \caption{Hallucinated return versus real-simulator return. Points below the diagonal indicate overestimation by the learned world model.}
+  \includegraphics[width=0.75\linewidth]{figures/hallucinated_vs_real.png}
+  \caption{Hallucinated return versus real-simulator return. The diagonal marks equal return. Points below the diagonal have hallucinated return greater than real return, while points above the diagonal transfer better than the model predicted.}
   \label{fig:hallu-real}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{figures/wm_vs_sim_rollout_v2.png}
+  \includegraphics[width=\linewidth]{figures/wm_vs_sim_rollout.png}
   \caption{Autoregressive world-model rollout against simulator frames. The difference row visualizes pixel-level drift.}
   \label{fig:rollout}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.8\linewidth]{figures/wm_drift_curve_v2.png}
+  \includegraphics[width=0.8\linewidth]{figures/wm_drift_curve.png}
   \caption{Pixel error and predicted terminal probability across an autoregressive rollout.}
   \label{fig:drift}
 \end{figure}
@@ -108,9 +130,44 @@ The tables and plots in this section are generated from synced experiment artifa
 \begin{table}[t]
   \centering
   \input{tables/grounding_summary.tex}
-  \caption{Iterative grounding results. Each iteration collects a small amount of real simulator data using the previous policy's actions and fine-tunes the existing world model.}
+  \caption{Iterative grounding results. Each iteration collects a small amount of real simulator data using the previous policy's actions, fine-tunes the existing world model, and then trains the policy inside the updated fixed world model. Real-data minutes assume 30 FPS.}
   \label{tab:grounding}
 \end{table}
+
+\begin{table}[t]
+  \centering
+  \input{tables/scalar_consistency_summary.tex}
+  \caption{Scalar consistency diagnostic on a fixed world model. The reward-integrated estimate is $3 + \sum_t \hat{r}_t$ and is compared against true simulator snake length. Lower error is better.}
+  \label{tab:scalar-consistency}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/scalar_consistency_mae.png}
+  \caption{Direct length-head error versus reward-integrated length error. This diagnostic asks which scalar output better tracks true length under fixed action rollouts; it does not by itself establish which signal is better for PPO.}
+  \label{fig:scalar-consistency-mae}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.78\linewidth]{figures/scalar_consistency_rollout.png}
+  \caption{Example scalar rollout comparing true length, the direct length head, and $3 + \sum_t \hat{r}_t$. Counterexamples exist, so the result should be read as an average diagnostic rather than an invariant.}
+  \label{fig:scalar-consistency-rollout}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \input{tables/reward_objective_ablation.tex}
+  \caption{Fixed-world-model PPO objective ablation. The world model checkpoint and policy size are held fixed while PPO optimizes predicted reward, predicted length change, or a mixed scalar objective.}
+  \label{tab:reward-objective}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.72\linewidth]{figures/reward_objective_ablation.png}
+  \caption{True-simulator performance after PPO training under different scalar objectives inside the same fixed world model. This is the direct test of whether a scalar that is numerically accurate also helps policy transfer.}
+  \label{fig:reward-objective}
+\end{figure}
 
 \section{Discussion}
 This study is intentionally small, but the exploitation mechanism is the point.
@@ -120,6 +177,8 @@ The most important quantity is therefore not frame MAE alone, but the transfer g
 The grounding loop tests a practical mitigation.
 If the policy finds a model exploit, replaying its actions in the true simulator reveals the correct transitions near that exploit.
 Fine-tuning the world model on a small number of these transitions should, in principle, make the exploit harder to repeat.
+We use discrete grounding rounds rather than continuously updating the world model during PPO, because a fixed learned environment makes the transfer gap easier to interpret.
+In a more expensive real-world setting, the relevant budget is the ratio of imagined PPO transitions to newly collected real transitions: one can train for many simulated steps per hour of real data, but excessive policy optimization between grounding rounds may increase model exploitation.
 The experiment does not prove that this scales to humanoids or open-world games.
 It provides a controlled measurement harness for the same mechanism: train in imagination, evaluate in reality, then ground the model where the policy drove it out of distribution.
 
@@ -131,8 +190,7 @@ Finally, the current experiments use a single simulator and a modest compute bud
 
 \section{Reproducibility}
 The code, configs, generated figures, and selected result artifacts are packaged in the accompanying repository.
-The main config is \texttt{configs/focused\_v2.json}.
-The local smoke test is \texttt{scripts/local\_smoke.sh}.
+The main config and local smoke test are included in the accompanying repository.
 Experiment metrics are logged to the linked W\&B project.
 
 \bibliographystyle{plain}

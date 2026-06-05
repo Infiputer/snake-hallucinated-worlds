@@ -1,0 +1,46 @@
+{
+  "args": {
+    "clip": 0.2,
+    "dataset": "runs/datasets/snake_v2_main",
+    "death_penalty": 1.0,
+    "done_threshold": 0.8,
+    "entropy_coef": 0.01,
+    "epochs": 4,
+    "gae_lambda": 0.95,
+    "gamma": 0.99,
+    "init_policy": null,
+    "length_reward_scale": 1.0,
+    "lr": 0.00025,
+    "max_episode_steps": 256,
+    "max_grad_norm": 0.5,
+    "minibatch_size": 64,
+    "num_envs": 32,
+    "out": "runs/focused_v2/policies/wm_1m_ctx2_medium",
+    "policy": "medium",
+    "project": "snake-hallucinated-worlds-v2",
+    "reward_mode": "wm",
+    "rollout_steps": 64,
+    "save_every": 100,
+    "seed": 123,
+    "updates": 500,
+    "value_coef": 0.5,
+    "wandb_mode": "online",
+    "wm_reward_scale": 1.0,
+    "world_model": "runs/focused_v2/world_models/wm_1m_ctx2/latest.pt"
+  },
+  "dataset": "runs/datasets/snake_v2_main",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "policy_params": 1026821,
+  "policy_variant": "medium",
+  "world_model": {
+    "context": 2,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  },
+  "world_model_checkpoint": "runs/focused_v2/world_models/wm_1m_ctx2/latest.pt"
+}

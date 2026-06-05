@@ -1,0 +1,20 @@
+{
+  "csv": "runs/reward_length_ablation/evals/hall_wm/episodes.csv",
+  "done_rate": 1.0,
+  "episodes": 100,
+  "mean_return": 3.575818693637848,
+  "mean_steps": 161.59,
+  "mode": "hallucinated",
+  "policy": "runs/reward_length_ablation/policies/medium_wm/latest.pt",
+  "policy_params": 1026821,
+  "policy_variant": "medium",
+  "world_model": {
+    "context": 5,
+    "spec": {
+      "base_channels": 36,
+      "latent_blocks": 2,
+      "name": "wm_1m"
+    },
+    "variant": "wm_1m"
+  }
+}

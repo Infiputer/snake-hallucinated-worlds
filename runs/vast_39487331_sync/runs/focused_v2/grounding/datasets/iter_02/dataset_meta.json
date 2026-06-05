@@ -1,0 +1,129 @@
+{
+  "corner_colors": [
+    [
+      170,
+      215,
+      81
+    ]
+  ],
+  "format": "indexed_npy_v2_merged_no_terminal_overlay",
+  "frames": 52140,
+  "inputs": [
+    {
+      "frames": 50656,
+      "meta": {
+        "corner_colors": [
+          [
+            170,
+            215,
+            81
+          ]
+        ],
+        "episodes_recorded": 656,
+        "episodes_requested": 2500,
+        "format": "indexed_npy_v2_no_terminal_overlay",
+        "frames": 50656,
+        "max_context": 5,
+        "max_steps": 256,
+        "path": "runs/datasets/snake_v2_main",
+        "policies": [
+          "random",
+          "safe_random",
+          "straight",
+          "greedy"
+        ],
+        "reward": {
+          "apple_reward": 1.0,
+          "death_penalty": -1.0,
+          "win_reward": 5.0
+        },
+        "seed": 123,
+        "status_counts": {
+          "dead": 433,
+          "play": 49411,
+          "win": 156
+        },
+        "transitions": 50000
+      },
+      "path": "runs/datasets/snake_v2_main",
+      "transitions": 50000
+    },
+    {
+      "frames": 1004,
+      "meta": {
+        "corner_colors": [
+          [
+            170,
+            215,
+            81
+          ]
+        ],
+        "episodes_recorded": 4,
+        "episodes_requested": 40,
+        "format": "indexed_npy_v2_policy_collection_no_terminal_overlay",
+        "frames": 1004,
+        "max_context": 5,
+        "max_steps": 256,
+        "path": "runs/focused_v2/grounding/collections/iter_01",
+        "reward": {
+          "apple_reward": 1.0,
+          "death_penalty": -1.0,
+          "win_reward": 5.0
+        },
+        "sample": false,
+        "seed": 8001,
+        "source_policy": "runs/focused_v2/policies/wm_2m_ctx5_small/latest.pt",
+        "source_policy_variant": "small",
+        "status_counts": {
+          "play": 1000
+        },
+        "transitions": 1000
+      },
+      "path": "runs/focused_v2/grounding/collections/iter_01",
+      "transitions": 1000
+    },
+    {
+      "frames": 480,
+      "meta": {
+        "corner_colors": [
+          [
+            170,
+            215,
+            81
+          ]
+        ],
+        "episodes_recorded": 40,
+        "episodes_requested": 40,
+        "format": "indexed_npy_v2_policy_collection_no_terminal_overlay",
+        "frames": 480,
+        "max_context": 5,
+        "max_steps": 256,
+        "path": "runs/focused_v2/grounding/collections/iter_02",
+        "reward": {
+          "apple_reward": 1.0,
+          "death_penalty": -1.0,
+          "win_reward": 5.0
+        },
+        "sample": false,
+        "seed": 8002,
+        "source_policy": "runs/focused_v2/grounding/policies/iter_01_small/latest.pt",
+        "source_policy_variant": "small",
+        "status_counts": {
+          "dead": 40,
+          "play": 400
+        },
+        "transitions": 440
+      },
+      "path": "runs/focused_v2/grounding/collections/iter_02",
+      "transitions": 440
+    }
+  ],
+  "max_context": 5,
+  "path": "runs/focused_v2/grounding/datasets/iter_02",
+  "status_counts": {
+    "dead": 473,
+    "play": 50811,
+    "win": 156
+  },
+  "transitions": 51440
+}

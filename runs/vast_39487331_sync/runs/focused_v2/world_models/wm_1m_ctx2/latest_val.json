@@ -1,0 +1,15 @@
+{
+  "step": 20000,
+  "val/done_bce": 0.000690133126767023,
+  "val/done_fn": 0,
+  "val/done_fp": 0,
+  "val/done_fpr": 0.0,
+  "val/done_precision": 1.0,
+  "val/done_recall": 1.0,
+  "val/done_tn": 1007,
+  "val/done_tp": 17,
+  "val/frame_l1": 0.0005542919316212647,
+  "val/length_huber": 0.0004348207621660549,
+  "val/reward_mse": 0.0003581193683785955,
+  "val/total": 0.0011219002517464105
+}

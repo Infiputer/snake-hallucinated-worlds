@@ -10,11 +10,12 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 
 from .dataset import SnakeWorldModelDataset
+from .env import DOWN, RIGHT, SnakeEnv
 from .train_policy import load_world_model
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Create v2 paper figures")
+    p = argparse.ArgumentParser(description="Create paper figures")
     p.add_argument("--dataset", required=True)
     p.add_argument("--world-model", default=None)
     p.add_argument("--eval-summary", default=None)
@@ -40,6 +41,28 @@ def label(img: Image.Image, text: str, bar_h: int = 24) -> Image.Image:
     return out
 
 
+def label_bottom(img: Image.Image, text: str, bar_h: int = 42) -> Image.Image:
+    out = Image.new("RGB", (img.width, img.height + bar_h), "white")
+    out.paste(img, (0, 0))
+    draw = ImageDraw.Draw(out)
+    try:
+        font = ImageFont.truetype("DejaVuSans.ttf", 13)
+    except Exception:
+        font = ImageFont.load_default()
+    draw.multiline_text((6, img.height + 5), text, fill=(20, 20, 20), font=font, spacing=2)
+    return out
+
+
+def arrow_cell(height: int, width: int = 48) -> Image.Image:
+    img = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(img)
+    y = height // 2 - 10
+    x0, x1 = 8, width - 10
+    draw.line((x0, y, x1, y), fill=(35, 35, 35), width=4)
+    draw.polygon([(x1, y), (x1 - 10, y - 7), (x1 - 10, y + 7)], fill=(35, 35, 35))
+    return img
+
+
 def hstack(images: list[Image.Image], gap: int = 8) -> Image.Image:
     out = Image.new("RGB", (sum(i.width for i in images) + gap * (len(images) - 1), max(i.height for i in images)), "white")
     x = 0
@@ -62,6 +85,35 @@ def make_diff(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return np.clip(np.abs(a.astype(np.int16) - b.astype(np.int16)).astype(np.float32) * 3.0, 0, 255).astype(np.uint8)
 
 
+def make_environment_sequence(out_dir: Path) -> None:
+    env = SnakeEnv(seed=7)
+    frames: list[tuple[np.ndarray, str]] = [(env.reset().frame, "Initial board\nsnake, rocks, apples")]
+    result = None
+    for action in [RIGHT, RIGHT, RIGHT, RIGHT]:
+        result = env.step(action)
+    frames.append((result.frame, "Policy actions\nmove toward apple"))
+    for action in [RIGHT, DOWN, DOWN]:
+        result = env.step(action)
+    frames.append((result.frame, "Apple eaten\nsnake length increases"))
+
+    death_env = SnakeEnv(seed=11)
+    death_env.reset()
+    death_env.snake = [(7, 7), (7, 8), (8, 8), (8, 7), (9, 7), (9, 8), (9, 9), (8, 9), (7, 9)]
+    death_env.direction = RIGHT
+    death_env.last_action = RIGHT
+    frames.append((death_env.frame, "Before collision\nhead faces its body"))
+    result = death_env.step(RIGHT)
+    frames.append((result.frame, "Self-intersection\nepisode ends"))
+
+    cells = [label_bottom(to_pil(frame, 2), text) for frame, text in frames]
+    pieces: list[Image.Image] = []
+    for i, cell in enumerate(cells):
+        pieces.append(cell)
+        if i + 1 < len(cells):
+            pieces.append(arrow_cell(cell.height))
+    hstack(pieces, gap=0).save(out_dir / "snake_environment_sequence.png")
+
+
 def plot_eval_summary(path: Path, out_dir: Path) -> None:
     rows = []
     with path.open(newline="", encoding="utf-8") as f:
@@ -81,11 +133,11 @@ def plot_eval_summary(path: Path, out_dir: Path) -> None:
     ax.plot([mn, mx], [mn, mx], color="0.65", linewidth=1)
     ax.set_xlabel("Hallucinated return")
     ax.set_ylabel("Real-simulator return")
-    ax.set_title("v2 transfer: hallucinated vs real")
+    ax.set_title("Transfer: hallucinated vs real")
     ax.legend(frameon=False)
     ax.grid(True, alpha=0.25)
     fig.tight_layout()
-    fig.savefig(out_dir / "hallucinated_vs_real_v2.png", bbox_inches="tight")
+    fig.savefig(out_dir / "hallucinated_vs_real.png", bbox_inches="tight")
     plt.close(fig)
 
 
@@ -94,9 +146,10 @@ def main() -> None:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     frames = np.load(Path(args.dataset) / "frames.npy", mmap_mode="r")
+    make_environment_sequence(out_dir)
     meta_colors = sorted(set(tuple(map(int, frames[i, 0, 0])) for i in np.linspace(0, len(frames) - 1, min(len(frames), 500), dtype=int)))
-    example = label(to_pil(np.asarray(frames[min(20, len(frames) - 1)]), 5), f"No-overlay Snake frame; sampled corner colors={meta_colors}", 30)
-    example.save(out_dir / "snake_no_overlay_frame.png")
+    example = label(to_pil(np.asarray(frames[min(20, len(frames) - 1)]), 5), f"Simulator Snake frame; sampled corner colors={meta_colors}", 30)
+    example.save(out_dir / "snake_simulator_frame.png")
     if args.world_model:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = load_world_model(args.world_model, device)
@@ -129,7 +182,7 @@ def main() -> None:
         pred_cells = [label(to_pil(pred_arr[s - 1], 2), f"t={s}", 20) for s in steps]
         diff_cells = [label(to_pil(make_diff(real[s - 1], pred_arr[s - 1]), 2), f"MAE={mae[s - 1]:.3f}", 20) for s in steps]
         grid = vstack([hstack([label(Image.new("RGB", (130, 256), "white"), "Real", 20)] + real_cells), hstack([label(Image.new("RGB", (130, 256), "white"), "World model", 20)] + pred_cells), hstack([label(Image.new("RGB", (130, 256), "white"), "|diff| x3", 20)] + diff_cells)])
-        grid.save(out_dir / "wm_vs_sim_rollout_v2.png")
+        grid.save(out_dir / "wm_vs_sim_rollout.png")
         fig, ax1 = plt.subplots(figsize=(7.2, 3.2), dpi=180)
         xs = np.arange(1, len(mae) + 1)
         ax1.plot(xs, mae, color="#0f4c81", label="pixel MAE")
@@ -143,7 +196,7 @@ def main() -> None:
         lines2, labels2 = ax2.get_legend_handles_labels()
         ax1.legend(lines + lines2, labels + labels2, frameon=False, loc="upper left")
         fig.tight_layout()
-        fig.savefig(out_dir / "wm_drift_curve_v2.png", bbox_inches="tight")
+        fig.savefig(out_dir / "wm_drift_curve.png", bbox_inches="tight")
         plt.close(fig)
     if args.eval_summary:
         plot_eval_summary(Path(args.eval_summary), out_dir)
