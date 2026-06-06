@@ -33,16 +33,18 @@ def border() -> list[tuple[int, int]]:
 
 
 FIXED_INNER_WALLS = [
-    pt(2, 2), pt(3, 2), pt(4, 2), pt(6, 2), pt(9, 2), pt(11, 2), pt(12, 2), pt(13, 2),
-    pt(2, 4), pt(4, 4), pt(5, 4), pt(7, 4), pt(8, 4), pt(10, 4), pt(11, 4), pt(13, 4),
-    pt(4, 5), pt(11, 5),
-    pt(2, 6), pt(4, 6), pt(6, 6), pt(9, 6), pt(11, 6), pt(13, 6),
-    pt(6, 7), pt(9, 7),
-    pt(3, 8), pt(4, 8), pt(6, 8), pt(9, 8), pt(11, 8), pt(12, 8),
-    pt(2, 9), pt(4, 9), pt(6, 9), pt(9, 9), pt(11, 9), pt(13, 9),
-    pt(4, 10), pt(11, 10),
-    pt(2, 11), pt(4, 11), pt(5, 11), pt(7, 11), pt(8, 11), pt(10, 11), pt(11, 11), pt(13, 11),
-    pt(2, 13), pt(3, 13), pt(4, 13), pt(6, 13), pt(9, 13), pt(11, 13), pt(12, 13), pt(13, 13),
+    pt(2, 2), pt(3, 2), pt(5, 2), pt(9, 2),
+    pt(2, 3), pt(7, 3), pt(10, 3),
+    pt(4, 4), pt(5, 4), pt(8, 4),
+    pt(2, 5), pt(8, 5), pt(12, 5),
+    pt(3, 6), pt(5, 6), pt(13, 6),
+    pt(5, 7), pt(6, 7), pt(11, 7),
+    pt(2, 8), pt(4, 8), pt(10, 8), pt(12, 8),
+    pt(3, 9), pt(6, 9), pt(11, 9), pt(13, 9),
+    pt(5, 10), pt(8, 10), pt(12, 10),
+    pt(2, 11), pt(4, 11), pt(9, 11), pt(10, 11),
+    pt(3, 12), pt(6, 12), pt(11, 12),
+    pt(2, 13), pt(5, 13), pt(8, 13), pt(12, 13),
 ]
 
 
@@ -73,13 +75,12 @@ class PacmanEnv:
         for _ in range(200):
             walls = set(border())
             for y in range(2, 14):
-                for x in range(1, 8):
-                    a, b = pt(x, y), pt(BOARD - 1 - x, y)
-                    if a in safe or b in safe:
+                for x in range(1, BOARD - 1):
+                    cell = pt(x, y)
+                    if cell in safe:
                         continue
-                    if self.rng.random() < 0.24:
-                        walls.add(a)
-                        walls.add(b)
+                    if self.rng.random() < 0.18 and pt(BOARD - 1 - x, y) not in walls:
+                        walls.add(cell)
             if len(self._reachable(start, walls)) >= 125:
                 return sorted(walls)
         return border() + FIXED_INNER_WALLS
@@ -147,12 +148,12 @@ class PacmanEnv:
         for wall in self.walls:
             self._rect(img, wall, (30, 85, 255), inset=2)
             self._rect(img, wall, (0, 12, 80), inset=5)
-        for pellet in self.pellets:
-            self._rect(img, pellet, (255, 230, 166), inset=6)
         colors = [(255, 79, 99), (85, 215, 255), (255, 157, 242), (255, 180, 71)]
         for i, ghost in enumerate(self.ghosts):
             self._rect(img, ghost, colors[i % len(colors)], inset=3)
             self._rect(img, ghost, (255, 255, 255), inset=6)
+        for pellet in self.pellets:
+            self._rect(img, pellet, (255, 230, 166), inset=6)
         self._rect(img, self.player, (255, 210, 31), inset=2)
         return img
 
