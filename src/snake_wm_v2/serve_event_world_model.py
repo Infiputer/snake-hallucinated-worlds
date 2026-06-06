@@ -15,6 +15,7 @@ from PIL import Image
 
 from .env import BOARD, DOWN, INITIAL_APPLES, LEFT, RIGHT, ROCKS_SET, UP, SnakeEnv
 from .event_model import EventSnakeWorldModel
+from .pacman_env import PacmanEnv
 
 
 HTML = r"""<!doctype html>
@@ -664,6 +665,256 @@ GAMES_HTML = r"""<!doctype html>
 """
 
 
+PACMAN_WM_HTML = r"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pac-Man World Model Simulator</title>
+  <style>
+    :root {
+      --ink: #fff3c4;
+      --muted: #9aa8c7;
+      --panel: #080b18;
+      --line: #1d3d86;
+      --blue: #245bff;
+      --gold: #ffd21f;
+      --danger: #ff4f63;
+      --cyan: #55d7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: #000;
+      font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    }
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 34px auto;
+      display: grid;
+      grid-template-columns: minmax(320px, 620px) 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .screen {
+      background: #02030a;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 28px 80px rgba(0,0,0,.65), inset 0 0 0 1px rgba(255,255,255,.035);
+    }
+    img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      image-rendering: pixelated;
+      border-radius: 14px;
+      background: #050505;
+    }
+    .card {
+      background: rgba(8, 11, 24, .92);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 70px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    h1 {
+      font-size: clamp(38px, 6vw, 76px);
+      line-height: .88;
+      letter-spacing: -.06em;
+      margin: 0 0 14px;
+      color: var(--gold);
+    }
+    p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.45;
+      margin: 0 0 18px;
+    }
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+      font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 12px;
+      background: rgba(36, 91, 255, .08);
+    }
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .value {
+      font: 800 24px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--ink);
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 78px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    button {
+      border: 1px solid #254a9e;
+      background: #0d2358;
+      color: var(--ink);
+      border-radius: 16px;
+      font: 800 18px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 16px 14px;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #020511;
+      transform: translateY(0);
+    }
+    button:active { transform: translateY(5px); box-shadow: 0 3px 0 #020511; }
+    .wide {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .wide button {
+      background: #1d3d86;
+      border-color: var(--blue);
+    }
+    .status {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(85, 215, 255, .10);
+      color: var(--cyan);
+      font-weight: 800;
+    }
+    .status.dead {
+      background: rgba(255, 79, 99, .12);
+      color: var(--danger);
+    }
+    code {
+      background: rgba(255, 243, 196, .10);
+      padding: 2px 6px;
+      border-radius: 7px;
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; margin: 18px auto; }
+      .screen { order: 2; }
+      .card { order: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="screen">
+      <img id="frame" alt="World model predicted Pac-Man frame" />
+    </section>
+    <section class="card">
+      <a href="/">Snake WM</a> · <a href="/games/pacman">code-sim Pac-Man</a>
+      <h1>Pac-Man, hallucinated.</h1>
+      <p>This page is the learned Pac-Man event world model. It does not call the Pac-Man simulator after reset; each action asks the WM to predict the next RGB frame plus pellet/death events.</p>
+      <div class="stats">
+        <div class="stat"><div class="label">step</div><div class="value" id="step">0</div></div>
+        <div class="stat"><div class="label">pellets</div><div class="value" id="pellets">0</div></div>
+        <div class="stat"><div class="label">P(pellet)</div><div class="value" id="pPellet">0.00</div></div>
+        <div class="stat"><div class="label">P(death)</div><div class="value" id="pDeath">0.00</div></div>
+      </div>
+      <div class="controls">
+        <div></div><button data-action="0">↑</button><div></div>
+        <button data-action="2">←</button><button id="reset">reset</button><button data-action="3">→</button>
+        <div></div><button data-action="1">↓</button><div></div>
+      </div>
+      <div class="wide">
+        <button id="randomReset">random map seed</button>
+        <button id="continue">continue after death</button>
+      </div>
+      <div id="status" class="status">ready</div>
+      <p style="margin-top:18px">Action ids: <code>0 up</code>, <code>1 down</code>, <code>2 left</code>, <code>3 right</code>. Press <code>R</code> to reset.</p>
+    </section>
+  </main>
+  <script>
+    const frame = document.getElementById("frame");
+    const ids = {
+      step: document.getElementById("step"),
+      pellets: document.getElementById("pellets"),
+      pPellet: document.getElementById("pPellet"),
+      pDeath: document.getElementById("pDeath"),
+      status: document.getElementById("status"),
+    };
+    let busy = false;
+    let allowDeadStep = false;
+    function draw(s) {
+      frame.src = s.image;
+      ids.step.textContent = s.step;
+      ids.pellets.textContent = s.predicted_apples;
+      ids.pPellet.textContent = Number(s.apple_prob).toFixed(2);
+      ids.pDeath.textContent = Number(s.death_prob).toFixed(2);
+      ids.status.textContent = s.done ? "death head fired; reset or continue" : "running inside learned Pac-Man";
+      ids.status.className = "status" + (s.done ? " dead" : "");
+    }
+    async function post(path, body = {}) {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return await res.json();
+    }
+    async function reset(randomMap = false) {
+      if (busy) return;
+      busy = true;
+      try { draw(await post("/api/pacman/reset", {random_map: randomMap})); }
+      catch (err) {
+        ids.status.textContent = err.message;
+        ids.status.className = "status dead";
+      }
+      finally { busy = false; }
+    }
+    async function step(action) {
+      if (busy) return;
+      busy = true;
+      try { draw(await post("/api/pacman/step", {action, allow_dead_step: allowDeadStep})); }
+      catch (err) {
+        ids.status.textContent = err.message;
+        ids.status.className = "status dead";
+      }
+      finally { busy = false; }
+    }
+    document.querySelectorAll("[data-action]").forEach(btn => {
+      btn.addEventListener("click", () => step(Number(btn.dataset.action)));
+    });
+    document.getElementById("reset").addEventListener("click", () => reset(false));
+    document.getElementById("randomReset").addEventListener("click", () => reset(true));
+    document.getElementById("continue").addEventListener("click", () => {
+      allowDeadStep = !allowDeadStep;
+      document.getElementById("continue").textContent = allowDeadStep ? "stop at death" : "continue after death";
+    });
+    window.addEventListener("keydown", (e) => {
+      const map = {ArrowUp: 0, w: 0, W: 0, ArrowDown: 1, s: 1, S: 1, ArrowLeft: 2, a: 2, A: 2, ArrowRight: 3, d: 3, D: 3};
+      if (e.key === "r" || e.key === "R") return reset(false);
+      if (map[e.key] !== undefined) {
+        e.preventDefault();
+        step(map[e.key]);
+      }
+    });
+    reset(false);
+  </script>
+</body>
+</html>
+"""
+
+
 GAME_CONFIGS = {
     "pacman": {"title": "Mini Pac-Man", "mode": "pacman", "hint": "Eat pellets, avoid ghosts. Arrow keys/WASD move one tile."},
 }
@@ -833,7 +1084,19 @@ class WorldModelSession:
         }
 
 
-def make_handler(session: WorldModelSession):
+class PacmanWorldModelSession(WorldModelSession):
+    def reset(self, random_map: bool = False) -> dict:
+        env = PacmanEnv(seed=123 if not random_map else int(np.random.randint(0, 2**31 - 1)), random_map=random_map)
+        result = env.reset()
+        with self.lock:
+            self.seed_frame_unlocked(result.frame)
+            return self.state_unlocked()
+
+    def custom_reset(self, apples: object, rocks: object | None = None) -> dict:
+        return self.reset(False)
+
+
+def make_handler(session: WorldModelSession, pacman_session: PacmanWorldModelSession | None = None):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt: str, *args) -> None:
             return
@@ -874,9 +1137,24 @@ def make_handler(session: WorldModelSession):
                     self.end_headers()
                     self.wfile.write(raw)
                     return
+            if path == "/pacman-wm":
+                raw = PACMAN_WM_HTML.encode("utf-8")
+                self.send_response(200 if pacman_session is not None else 503)
+                self.send_header("content-type", "text/html; charset=utf-8")
+                self.send_header("content-length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+                return
             if path == "/api/state":
                 with session.lock:
                     self.send_json(session.state_unlocked())
+                return
+            if path == "/api/pacman/state":
+                if pacman_session is None:
+                    self.send_json({"error": "Pac-Man checkpoint was not loaded"}, status=503)
+                    return
+                with pacman_session.lock:
+                    self.send_json(pacman_session.state_unlocked())
                 return
             if path == "/api/config":
                 env = SnakeEnv(seed=123)
@@ -906,6 +1184,18 @@ def make_handler(session: WorldModelSession):
                 if path == "/api/step":
                     self.send_json(session.step(int(data.get("action")), bool(data.get("allow_dead_step", False))))
                     return
+                if path == "/api/pacman/reset":
+                    if pacman_session is None:
+                        self.send_json({"error": "Pac-Man checkpoint was not loaded"}, status=503)
+                        return
+                    self.send_json(pacman_session.reset(bool(data.get("random_map", False))))
+                    return
+                if path == "/api/pacman/step":
+                    if pacman_session is None:
+                        self.send_json({"error": "Pac-Man checkpoint was not loaded"}, status=503)
+                        return
+                    self.send_json(pacman_session.step(int(data.get("action")), bool(data.get("allow_dead_step", False))))
+                    return
                 self.send_error(404)
             except Exception as exc:
                 self.send_json({"error": str(exc)}, status=400)
@@ -926,6 +1216,7 @@ def parse_location(location: str | None, host: str, port: int) -> tuple[str, int
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=Path, default=Path("runs/local_event_random_eval_small_only_20260605_220114/hard/world_models/wm_1m_ctx1_events/latest.pt"))
+    parser.add_argument("--pacman-checkpoint", type=Path, default=Path("../../snake_wm_v2/runs/pacman_argmax_matrix/world_models/wm_2m/latest.pt"))
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8055)
     parser.add_argument("--location", default=None, help="host:port shorthand, for example localhost:2453")
@@ -934,9 +1225,15 @@ def main() -> None:
     host, port = parse_location(args.location, args.host, args.port)
 
     session = WorldModelSession(args.checkpoint, args.device)
-    server = ThreadingHTTPServer((host, port), make_handler(session))
+    pacman_session = PacmanWorldModelSession(args.pacman_checkpoint, args.device) if args.pacman_checkpoint.exists() else None
+    server = ThreadingHTTPServer((host, port), make_handler(session, pacman_session))
     print(f"serving Snake WM simulator at http://{host}:{port}")
     print(f"checkpoint: {args.checkpoint}")
+    if pacman_session is not None:
+        print(f"serving Pac-Man WM simulator at http://{host}:{port}/pacman-wm")
+        print(f"pacman checkpoint: {args.pacman_checkpoint}")
+    else:
+        print(f"Pac-Man checkpoint not found; /pacman-wm API will be unavailable: {args.pacman_checkpoint}")
     print(f"device: {args.device}")
     server.serve_forever()
 
