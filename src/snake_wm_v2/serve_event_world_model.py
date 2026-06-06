@@ -481,6 +481,268 @@ HTML = r"""<!doctype html>
 """
 
 
+GAMES_HTML = r"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Low-res world model game candidates</title>
+  <style>
+    :root {
+      --ink: #f2ead2;
+      --muted: #a9b494;
+      --line: #344329;
+      --green: #9bd85c;
+      --blue: #72a7ff;
+      --red: #ff725f;
+      --gold: #f0c95a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: #000;
+      font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    }
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 34px auto 60px;
+    }
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 26px;
+    }
+    h1 {
+      font-size: clamp(38px, 7vw, 82px);
+      line-height: .88;
+      letter-spacing: -0.06em;
+      margin: 0 0 14px;
+    }
+    p {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.45;
+      max-width: 760px;
+      margin: 0;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .back {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 16px;
+      color: var(--green);
+      background: rgba(155, 216, 92, .08);
+      font: 700 14px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: nowrap;
+    }
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+    }
+    .game {
+      min-height: 310px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 18px;
+      background: #070a06;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255,255,255,.025);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 15px;
+      transition: transform .14s ease, border-color .14s ease;
+    }
+    .game:hover {
+      transform: translateY(-4px);
+      border-color: var(--green);
+    }
+    .thumb {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #25351d;
+      background: #111;
+      image-rendering: pixelated;
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+    }
+    .cell:nth-child(odd) { background: #1b2616; }
+    .cell:nth-child(even) { background: #22301b; }
+    .wall { background: #344329 !important; }
+    .coin { background: var(--gold) !important; box-shadow: inset 0 0 0 2px #9e7a1e; }
+    .enemy { background: var(--red) !important; }
+    .player { background: var(--blue) !important; }
+    .pellet { background: #f2ead2 !important; transform: scale(.32); border-radius: 999px; }
+    .water { background: #1f5f8f !important; }
+    .lava { background: #b93b2d !important; }
+    .key { background: #c48cff !important; }
+    .goal { background: var(--green) !important; }
+    h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: -.035em;
+    }
+    .meta {
+      color: var(--muted);
+      font: 700 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .why {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.35;
+      margin-top: 9px;
+    }
+    .tag {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid #405832;
+      border-radius: 999px;
+      padding: 8px 10px;
+      color: var(--green);
+      background: rgba(155, 216, 92, .08);
+      font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    @media (max-width: 760px) {
+      .top { grid-template-columns: 1fr; align-items: start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="top">
+      <div>
+        <h1>Next games after Snake.</h1>
+        <p>Same visual constraint: tiny RGB frames, crisp pixel art, action-conditioned next-frame prediction, plus discrete event heads for reward and death. Pick a game where the reward interface is still simple enough to test cleanly.</p>
+      </div>
+      <a class="back" href="/">back to Snake WM</a>
+    </section>
+    <section class="games">
+      <a class="game" href="/games/pacman">
+        <div class="thumb" data-scene="pacman"></div>
+        <div>
+          <h2>Mini Pac-Man</h2>
+          <div class="meta">collect pellets | avoid ghosts | medium risk</div>
+          <div class="why">Best next step if we want a recognizable game with discrete rewards and adversarial motion.</div>
+        </div>
+        <span class="tag">recommended after Snake++</span>
+      </a>
+      <a class="game" href="/games/maze-key">
+        <div class="thumb" data-scene="maze"></div>
+        <div>
+          <h2>Maze Key Door</h2>
+          <div class="meta">key event | door event | low risk</div>
+          <div class="why">Clean test of partial objectives: learn navigation, collect a key, then reach a goal.</div>
+        </div>
+        <span class="tag">clean paper extension</span>
+      </a>
+      <a class="game" href="/games/collect-coins">
+        <div class="thumb" data-scene="coins"></div>
+        <div>
+          <h2>Coin Collector</h2>
+          <div class="meta">multi-collect | no body dynamics | low risk</div>
+          <div class="why">Simplest control after Snake. Useful for checking whether event rewards solve reward exploitation generally.</div>
+        </div>
+        <span class="tag">fastest baseline</span>
+      </a>
+      <a class="game" href="/games/sokoban">
+        <div class="thumb" data-scene="sokoban"></div>
+        <div>
+          <h2>Mini Sokoban</h2>
+          <div class="meta">push blocks | sparse goal | high risk</div>
+          <div class="why">More interesting dynamics, but harder credit assignment and more ways for a world model to drift.</div>
+        </div>
+        <span class="tag">hard dynamics</span>
+      </a>
+      <a class="game" href="/games/frogger">
+        <div class="thumb" data-scene="frogger"></div>
+        <div>
+          <h2>Mini Frogger</h2>
+          <div class="meta">moving hazards | crossing reward | medium risk</div>
+          <div class="why">Good for testing moving objects and death prediction without making rewards ambiguous.</div>
+        </div>
+        <span class="tag">moving hazards</span>
+      </a>
+      <a class="game" href="/games/snake-plus">
+        <div class="thumb" data-scene="snake"></div>
+        <div>
+          <h2>Snake++</h2>
+          <div class="meta">random rocks | random apples | lowest risk</div>
+          <div class="why">Most controlled extension: same game, broader layouts, better evidence before changing domains.</div>
+        </div>
+        <span class="tag">do this first</span>
+      </a>
+    </section>
+  </main>
+  <script>
+    const scenes = {
+      pacman: {wall: [0,1,2,3,4,5,6,7,8,15,16,31,32,47,48,63,64,79,80,95,96,111,112,127,128,143,144,159,160,175,176,191,192,207,208,223,224,239,240,241,242,243,244,245,246,247,248,255], pellet: [18,21,24,27,35,38,41,44,67,70,73,76,99,102,105,108,131,134,137,140,163,166,169,172,195,198,201,204], player: [182], enemy: [85,90,170]},
+      maze: {wall: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,31,32,34,35,36,38,39,41,42,44,47,48,52,55,58,63,64,65,66,68,70,72,74,76,78,79,80,84,86,90,94,95,96,98,100,102,104,106,108,111,112,116,120,124,127,128,130,131,132,134,136,138,140,143,144,159,160,175,176,191,192,207,208,223,224,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255], player: [17], key: [109], goal: [238]},
+      coins: {coin: [35,39,44,72,76,105,119,134,151,186,202,217], player: [204], enemy: [85]},
+      sokoban: {wall: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,31,32,47,48,63,64,79,80,95,96,111,112,127,128,143,144,159,160,175,176,191,192,207,208,223,224,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,84,85,86,116,148], player: [197], coin: [101,118], goal: [90,154]},
+      frogger: {water: [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79], lava: [112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159], player: [232], goal: [7], enemy: [116,123,146,153]},
+      snake: {wall: [88,89,104,105,196,197,139,140], coin: [37,42,82,110,154,201], player: [147,146,145]}
+    };
+    document.querySelectorAll('.thumb').forEach((el) => {
+      const scene = scenes[el.dataset.scene] || {};
+      for (let i = 0; i < 256; i++) {
+        const c = document.createElement('div');
+        c.className = 'cell';
+        for (const [name, ids] of Object.entries(scene)) {
+          if (ids.includes(i)) c.classList.add(name);
+        }
+        el.appendChild(c);
+      }
+    });
+  </script>
+</body>
+</html>
+"""
+
+
+GAME_CONFIGS = {
+    "pacman": {"title": "Mini Pac-Man", "mode": "pacman", "hint": "Eat pellets, avoid ghosts. Arrow keys/WASD move one tile."},
+    "maze-key": {"title": "Maze Key Door", "mode": "maze", "hint": "Pick up the key, then reach the green door."},
+    "collect-coins": {"title": "Coin Collector", "mode": "coins", "hint": "Collect every coin while avoiding the red chaser."},
+    "sokoban": {"title": "Mini Sokoban", "mode": "sokoban", "hint": "Push both crates onto the green goal tiles."},
+    "frogger": {"title": "Mini Frogger", "mode": "frogger", "hint": "Cross moving hazard lanes and reach the top goal."},
+    "snake-plus": {"title": "Snake++", "mode": "snake", "hint": "Classic Snake with rocks. Eat apples, avoid walls, rocks, and yourself."},
+}
+
+
+GAME_PLAY_HTML = r"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>__TITLE__</title>
+<style>
+:root{--ink:#f2ead2;--muted:#a9b494;--line:#344329;--green:#9bd85c;--blue:#72a7ff;--red:#ff725f;--gold:#f0c95a}*{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--ink);background:#000;font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif}main{width:min(980px,calc(100vw - 32px));margin:32px auto;display:grid;grid-template-columns:minmax(280px,560px) 1fr;gap:26px;align-items:start}h1{margin:0 0 12px;font-size:clamp(38px,6vw,78px);line-height:.88;letter-spacing:-.06em}p{color:var(--muted);font-size:18px;line-height:1.45;margin:0 0 18px}a{color:var(--green);text-decoration:none}.screen,.card{border:1px solid var(--line);border-radius:24px;background:#070a06;box-shadow:0 24px 80px rgba(0,0,0,.48),inset 0 0 0 1px rgba(255,255,255,.025)}.screen{padding:18px}canvas{width:100%;aspect-ratio:1;display:block;image-rendering:pixelated;border-radius:14px;background:#172512}.card{padding:24px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.stat{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}.label{color:var(--muted);font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}.value{font:700 26px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.controls{display:grid;grid-template-columns:repeat(3,74px);gap:10px;justify-content:center;margin-top:18px}button{border:1px solid #2a3b25;background:#24351e;color:#f2ead2;border-radius:16px;font:700 18px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;padding:16px 14px;cursor:pointer;box-shadow:0 8px 0 #070b06}button:active{transform:translateY(5px);box-shadow:0 3px 0 #070b06}.wide{width:100%;margin-top:12px;background:var(--green);color:#10200b}.status{margin-top:16px;padding:12px 14px;border-radius:14px;background:rgba(155,216,92,.1);color:var(--green);font-weight:700}.dead{color:var(--red);background:rgba(255,114,95,.12)}@media(max-width:820px){main{grid-template-columns:1fr;margin:18px auto}}
+</style></head><body><main><section class="screen"><canvas id="c" width="128" height="128"></canvas></section><section class="card"><a href="/games">all games</a><h1>__TITLE__</h1><p>__HINT__ Same low-resolution visual style as Snake: 16x16 grid rendered into 128x128 RGB pixels.</p><div class="stats"><div class="stat"><div class="label">score</div><div class="value" id="score">0</div></div><div class="stat"><div class="label">steps</div><div class="value" id="steps">0</div></div><div class="stat"><div class="label">mode</div><div class="value" id="mode">__MODE__</div></div><div class="stat"><div class="label">state</div><div class="value" id="state">run</div></div></div><div class="controls"><div></div><button data-a="0">↑</button><div></div><button data-a="2">←</button><button id="reset">reset</button><button data-a="3">→</button><div></div><button data-a="1">↓</button><div></div></div><button class="wide" id="tick">wait / tick hazards</button><div class="status" id="msg">ready</div></section></main>
+<script>
+const MODE="__MODE__",N=16,C=8,cv=document.getElementById('c'),x=cv.getContext('2d'),$=id=>document.getElementById(id),D=[[0,-1],[0,1],[-1,0],[1,0]];let S;function pt(x,y){return{x,y}}function same(a,b){return a.x===b.x&&a.y===b.y}function has(a,p){return a.some(q=>same(q,p))}function rm(a,p){let i=a.findIndex(q=>same(q,p));if(i>=0)a.splice(i,1);return i>=0}function inside(p){return p.x>=0&&p.x<N&&p.y>=0&&p.y<N}function add(p,d){return pt(p.x+D[d][0],p.y+D[d][1])}function border(){let w=[];for(let i=0;i<N;i++)w.push(pt(i,0),pt(i,N-1),pt(0,i),pt(N-1,i));return w}
+function reset(){S={score:0,steps:0,dead:false,win:false,msg:'ready',walls:[],coins:[],pellets:[],goals:[],boxes:[],rocks:[],hazards:[],ghosts:[],key:false,dir:3,snake:[]};if(MODE==='pacman'){S.player=pt(8,12);S.walls=border().concat([pt(4,4),pt(5,4),pt(10,4),pt(11,4),pt(4,8),pt(5,8),pt(10,8),pt(11,8),pt(7,6),pt(8,6)]);for(let y=2;y<14;y+=2)for(let q=2;q<14;q+=2)S.pellets.push(pt(q,y));S.ghosts=[pt(7,7),pt(11,10)]}if(MODE==='maze'){S.player=pt(1,1);S.keyPos=pt(11,6);S.door=pt(14,14);S.walls=border().concat([pt(3,1),pt(3,2),pt(3,3),pt(3,4),pt(5,4),pt(6,4),pt(7,4),pt(8,4),pt(10,2),pt(10,3),pt(10,4),pt(10,5),pt(10,6),pt(2,8),pt(3,8),pt(4,8),pt(5,8),pt(7,8),pt(8,8),pt(9,8),pt(11,10),pt(12,10),pt(13,10),pt(6,11),pt(6,12),pt(6,13)])}if(MODE==='coins'){S.player=pt(2,13);S.walls=border().concat([pt(5,5),pt(5,6),pt(5,7),pt(10,8),pt(11,8),pt(12,8)]);S.coins=[pt(3,3),pt(8,2),pt(13,4),pt(4,10),pt(9,12),pt(13,13)];S.ghosts=[pt(12,2)]}if(MODE==='sokoban'){S.player=pt(3,12);S.walls=border().concat([pt(3,3),pt(4,3),pt(5,3),pt(10,3),pt(10,4),pt(10,5),pt(6,10),pt(7,10),pt(8,10)]);S.boxes=[pt(6,7),pt(9,7)];S.goals=[pt(6,4),pt(11,11)]}if(MODE==='frogger'){S.player=pt(8,15);S.goals=[pt(8,0)];for(let q=1;q<15;q+=4)S.hazards.push({x:q,y:5,d:1});for(let q=2;q<15;q+=5)S.hazards.push({x:q,y:9,d:-1});for(let q=0;q<15;q+=5)S.hazards.push({x:q,y:12,d:1})}if(MODE==='snake'){S.snake=[pt(5,9),pt(4,9),pt(3,9)];S.player=S.snake[0];S.dir=3;S.rocks=[pt(8,5),pt(8,6),pt(9,5),pt(9,6),pt(4,12),pt(5,12),pt(11,8),pt(12,8)];S.coins=[pt(12,3)]}draw()}
+function blocked(p){return!inside(p)||has(S.walls,p)||has(S.rocks,p)}function moveGhosts(){for(const g of S.ghosts){let o=[0,1,2,3].map(d=>add(g,d)).filter(p=>!blocked(p));o.sort((a,b)=>Math.abs(a.x-S.player.x)+Math.abs(a.y-S.player.y)-Math.abs(b.x-S.player.x)-Math.abs(b.y-S.player.y));if(o[0]){g.x=o[0].x;g.y=o[0].y}}}function tickHazards(){for(const h of S.hazards){h.x+=h.d;if(h.x<=0||h.x>=15){h.d*=-1;h.x+=h.d*2}}}
+function step(d){if(S.dead||S.win)return;S.steps++;if(MODE==='snake'){if((d===0&&S.dir!==1)||(d===1&&S.dir!==0)||(d===2&&S.dir!==3)||(d===3&&S.dir!==2))S.dir=d;let h=add(S.snake[0],S.dir);if(blocked(h)||has(S.snake,h)){S.dead=true;S.msg='death';return draw()}S.snake.unshift(h);S.player=h;if(rm(S.coins,h)){S.score++;placeApple()}else S.snake.pop();return draw()}let np=add(S.player,d);if(MODE==='sokoban'&&has(S.boxes,np)){let b=S.boxes.find(q=>same(q,np)),bp=add(b,d);if(blocked(bp)||has(S.boxes,bp))np=S.player;else{b.x=bp.x;b.y=bp.y}}if(!blocked(np)&&!(MODE==='sokoban'&&has(S.boxes,np)))S.player=np;if(MODE==='pacman'){if(rm(S.pellets,S.player))S.score++;moveGhosts();if(has(S.ghosts,S.player)){S.dead=true;S.msg='ghost caught you'}if(S.pellets.length===0){S.win=true;S.msg='cleared pellets'}}if(MODE==='maze'){if(!S.key&&same(S.player,S.keyPos)){S.key=true;S.score=1}if(same(S.player,S.door)){if(S.key){S.win=true;S.msg='door reached'}else S.msg='need key first'}}if(MODE==='coins'){if(rm(S.coins,S.player))S.score++;moveGhosts();if(has(S.ghosts,S.player)){S.dead=true;S.msg='caught'}if(S.coins.length===0){S.win=true;S.msg='all coins'}}if(MODE==='sokoban'){S.score=S.boxes.filter(b=>has(S.goals,b)).length;if(S.score===S.goals.length){S.win=true;S.msg='all crates placed'}}if(MODE==='frogger'){tickHazards();if(S.hazards.some(h=>same(h,S.player))){S.dead=true;S.msg='hit hazard'}if(has(S.goals,S.player)){S.score=1;S.win=true;S.msg='crossed'}}draw()}
+function waitTick(){if(S.dead||S.win)return;S.steps++;if(MODE==='frogger')tickHazards();if(MODE==='pacman'||MODE==='coins')moveGhosts();if(S.hazards.some(h=>same(h,S.player))||has(S.ghosts,S.player)){S.dead=true;S.msg='caught'}draw()}function placeApple(){for(let y=1;y<15;y++)for(let q=1;q<15;q++){let p=pt(q,y);if(!has(S.snake,p)&&!has(S.rocks,p)){S.coins=[p];return}}}function cell(p,c){x.fillStyle=c;x.fillRect(p.x*C,p.y*C,C,C)}
+function draw(){x.imageSmoothingEnabled=false;for(let y=0;y<N;y++)for(let q=0;q<N;q++){x.fillStyle=((q+y)%2)?'#86c94d':'#93d957';x.fillRect(q*C,y*C,C,C)}[...S.walls,...S.rocks].forEach(p=>cell(p,'#405832'));S.goals.forEach(p=>cell(p,'#36c36b'));S.coins.forEach(p=>cell(p,'#e7473c'));S.pellets.forEach(p=>{x.fillStyle='#f2ead2';x.fillRect(p.x*C+3,p.y*C+3,2,2)});if(S.keyPos&&!S.key)cell(S.keyPos,'#c48cff');if(S.door)cell(S.door,S.key?'#36c36b':'#6a4831');S.boxes.forEach(p=>cell(p,'#b7793e'));S.hazards.forEach(p=>cell(p,'#ff725f'));S.ghosts.forEach(p=>cell(p,'#ff725f'));if(S.snake.length)S.snake.forEach((p,i)=>cell(p,i?'#2f80ed':'#72a7ff'));else cell(S.player,'#2f80ed');$('score').textContent=S.score;$('steps').textContent=S.steps;$('state').textContent=S.win?'win':(S.dead?'dead':'run');$('msg').textContent=S.msg||'running';$('msg').className='status'+(S.dead?' dead':'')}
+window.addEventListener('keydown',e=>{let m={ArrowUp:0,w:0,W:0,ArrowDown:1,s:1,S:1,ArrowLeft:2,a:2,A:2,ArrowRight:3,d:3,D:3};if(e.key==='r'||e.key==='R')return reset();if(m[e.key]!==undefined){e.preventDefault();step(m[e.key])}});document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>step(Number(b.dataset.a)));$('reset').onclick=reset;$('tick').onclick=waitTick;reset();
+</script></body></html>"""
+
+
+def game_page_html(slug: str) -> str:
+    cfg = GAME_CONFIGS[slug]
+    return (GAME_PLAY_HTML
+        .replace("__TITLE__", cfg["title"])
+        .replace("__MODE__", cfg["mode"])
+        .replace("__HINT__", cfg["hint"]))
+
+
 def tensor_to_data_url(frame: torch.Tensor) -> str:
     arr = frame.detach().float().clamp(0, 1)[0].permute(1, 2, 0).cpu().numpy()
     arr = (arr * 255.0).round().astype(np.uint8)
@@ -643,6 +905,24 @@ def make_handler(session: WorldModelSession):
                 self.end_headers()
                 self.wfile.write(raw)
                 return
+            if path == "/games":
+                raw = GAMES_HTML.encode("utf-8")
+                self.send_response(200)
+                self.send_header("content-type", "text/html; charset=utf-8")
+                self.send_header("content-length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+                return
+            if path.startswith("/games/"):
+                slug = path.removeprefix("/games/").strip("/")
+                if slug in GAME_CONFIGS:
+                    raw = game_page_html(slug).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("content-type", "text/html; charset=utf-8")
+                    self.send_header("content-length", str(len(raw)))
+                    self.end_headers()
+                    self.wfile.write(raw)
+                    return
             if path == "/api/state":
                 with session.lock:
                     self.send_json(session.state_unlocked())
