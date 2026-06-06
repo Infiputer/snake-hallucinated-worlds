@@ -836,7 +836,7 @@ PACMAN_WM_HTML = r"""<!doctype html>
       </div>
       <div class="wide">
         <button id="randomReset">random map seed</button>
-        <button id="continue">continue after death</button>
+        <button id="reset2">reset fixed map</button>
       </div>
       <div id="status" class="status">ready</div>
       <p style="margin-top:18px">Action ids: <code>0 up</code>, <code>1 down</code>, <code>2 left</code>, <code>3 right</code>. Press <code>R</code> to reset.</p>
@@ -895,11 +895,8 @@ PACMAN_WM_HTML = r"""<!doctype html>
       btn.addEventListener("click", () => step(Number(btn.dataset.action)));
     });
     document.getElementById("reset").addEventListener("click", () => reset(false));
+    document.getElementById("reset2").addEventListener("click", () => reset(false));
     document.getElementById("randomReset").addEventListener("click", () => reset(true));
-    document.getElementById("continue").addEventListener("click", () => {
-      allowDeadStep = !allowDeadStep;
-      document.getElementById("continue").textContent = allowDeadStep ? "stop at death" : "continue after death";
-    });
     window.addEventListener("keydown", (e) => {
       const map = {ArrowUp: 0, w: 0, W: 0, ArrowDown: 1, s: 1, S: 1, ArrowLeft: 2, a: 2, A: 2, ArrowRight: 3, d: 3, D: 3};
       if (e.key === "r" || e.key === "R") return reset(false);
