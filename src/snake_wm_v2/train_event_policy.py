@@ -74,8 +74,12 @@ class EventHallucinatedBatchEnv:
         self.frames = np.load(dataset_path / "frames.npy", mmap_mode="r")
         self.context_indices = np.load(dataset_path / "context_indices.npy", mmap_mode="r")[:, -1]
         self.dataset_len = len(self.context_indices)
+        _, height, width, channels = self.frames.shape
+        if channels != 3:
+            raise ValueError(f"expected RGB frames, got shape {self.frames.shape}")
+        self.frame_shape = (3, int(height), int(width))
         self.steps = torch.zeros(self.num_envs, dtype=torch.long, device=device)
-        self.frame = torch.empty(self.num_envs, 3, 128, 128, device=device)
+        self.frame = torch.empty(self.num_envs, *self.frame_shape, device=device)
         self.reset(torch.arange(self.num_envs, device=device))
 
     def reset(self, env_ids: torch.Tensor) -> None:
@@ -178,7 +182,7 @@ def main() -> None:
                 last_adv = delta + cfg.gamma * cfg.gae_lambda * next_nonterminal * last_adv
                 advantages[t] = last_adv
             returns = advantages + values
-        b_obs = torch.stack(obs_buf).reshape(-1, 3, 128, 128).detach()
+        b_obs = torch.stack(obs_buf).reshape(-1, *env.frame_shape).detach()
         b_actions = torch.stack(act_buf).reshape(-1).detach()
         b_logp = torch.stack(logp_buf).reshape(-1).detach()
         b_adv = advantages.reshape(-1).detach()

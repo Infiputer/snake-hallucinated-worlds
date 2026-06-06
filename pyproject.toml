@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 
 [project.scripts]
 snake-generate-data = "snake_wm_v2.generate_dataset:main"
+pacman-generate-data = "snake_wm_v2.generate_pacman_dataset:main"
 snake-train-wm = "snake_wm_v2.train_event_world_model:main"
 snake-inference = "snake_wm_v2.serve_event_world_model:main"
 snake-train-cnn-agent = "snake_wm_v2.train_event_policy:main"
