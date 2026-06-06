@@ -31,6 +31,10 @@ def write(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def tex(text: str) -> str:
+    return text.replace("_", r"\_")
+
+
 def snake_table(rows: list[dict], out: Path) -> None:
     lines = [
         r"\begin{tabular}{llrrrrr}",
@@ -90,7 +94,7 @@ def pacman_table(eval_root: Path, out: Path) -> list[dict]:
     ]
     for row in rows:
         lines.append(
-            f"{row['variant']} & {row['mode']} & {row['return']:.2f} & {row['pellets']:.2f} & "
+            f"{tex(row['variant'])} & {tex(row['mode'])} & {row['return']:.2f} & {row['pellets']:.2f} & "
             f"{row['steps']:.1f} & {row['death']:.2f} \\\\"
         )
     lines.extend([r"\bottomrule", r"\end{tabular}"])

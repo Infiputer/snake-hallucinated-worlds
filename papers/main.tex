@@ -159,10 +159,19 @@ No floating-point reward head or length head is used for control.
   \label{fig:pacman-rollout}
 \end{figure}
 
-The intended interpretation is capacity-based.
-If a tiny world model produces high hallucinated pellet reward but poor real-simulator pellet reward, then the policy has found a model-specific strategy even under discrete rewards.
-If larger world models reduce this transfer gap, then model capacity improves not only frame prediction but also the policy-relevant event dynamics.
-This is the central scaling question of the Pac-Man extension.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/pacman_wm2_vs_sim_rollout.png}
+  \caption{Pac-Man dataset frames compared with an autoregressive two-million-parameter world-model rollout under the same action sequence. The larger model improves short-horizon visual consistency, but policy transfer remains weak.}
+  \label{fig:pacman-rollout-wm2}
+\end{figure}
+
+The result is capacity-based but not solved.
+With the tiny Pac-Man world model, PPO discovers a strongly model-specific strategy: hallucinated evaluation reports about 244 predicted pellets per episode, while real random-map evaluation collects about 1.6 pellets and dies in 64\% of episodes.
+This is model exploitation despite hard argmax rewards.
+Increasing capacity to the one-million- and two-million-parameter models removes most of the hallucinated reward explosion, but it does not produce a strong transferred Pac-Man policy.
+The one-million-parameter policy collects about 1.7 pellets in the real simulator, and the two-million-parameter policy collects about 0.8 pellets.
+Thus the larger models are less obviously exploitable, but the learned worlds still are not good enough training environments for Pac-Man.
 
 \section{Discussion}
 The Snake result changes the original framing.
@@ -176,6 +185,9 @@ It moves the question to world-model capacity and domain complexity.
 Snake is almost fully observable from one frame, and the learned model transfers well.
 Pac-Man introduces moving ghosts, randomized mazes, and more complex visual dynamics.
 The relevant failure mode is therefore no longer fractional reward hacking, but policy optimization against an underpowered learned transition model.
+The tiny Pac-Man model shows the old failure mode in a cleaner form: even after removing fractional rewards, PPO can still exploit incorrect learned dynamics.
+The larger Pac-Man models show a different outcome: lower hallucinated reward, lower transfer gap, and still poor real performance.
+For this paper, that negative result is important because it separates ``the reward interface is wrong'' from ``the learned simulator is not yet accurate enough for control.''
 
 \section{Limitations}
 Both games are small deterministic simulators.

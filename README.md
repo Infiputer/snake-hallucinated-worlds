@@ -1,24 +1,43 @@
-# Snake Hallucinated Worlds
+# Discrete Event Rewards in Learned Visual Worlds
 
-Can a CNN learn to play Snake inside a learned visual world, then still play correctly in the real simulator?
+Can a CNN policy learn inside a learned video world, then still work in the real simulator?
 
-This repo is a small, visual world-model research project. We train a Snake video/world model, train a CNN policy inside that hallucinated environment, then evaluate whether the policy transfers back to the true code simulator.
+This repo is a visual world-model research project using two grid games:
+
+- Snake as the clean proof of concept.
+- Pac-Man as the harder stress test with moving ghosts, randomized connected mazes, and denser visuals.
+
+The key design change is simple: the world model predicts the next RGB frame plus discrete event logits. PPO receives hard `argmax` rewards, not fractional learned rewards.
 
 [Read the paper](paper.pdf)
 
 ![Snake simulator sequence](images/snake_environment_sequence.png)
 
-![Animated simulator versus world-model rollout](images/wm_vs_sim_rollout.gif)
+![Pac-Man simulator sequence](images/pacman_environment_sequence.png)
 
 ## What this is
 
-The world model sees a `128 x 128 x 3` RGB Snake frame and an action. It predicts the next frame plus two discrete events: whether the snake ate an apple and whether it died.
+The world model sees an RGB game frame and an action. It predicts:
 
-The point is not that Snake is hard. The point is that learned environments can be exploitable. A policy can look good inside the world model while failing in the real simulator, so we measure that hallucinated-vs-real transfer gap directly.
+- the next RGB frame,
+- whether the reward item was collected,
+- whether the agent died.
 
-The GIF above shows the same action sequence rolled through the real simulator and the learned world model. The bottom row highlights drift as the rollout gets longer.
+The point is not that Snake or Pac-Man require learned simulators. The point is to measure when a CNN trained in a learned visual simulator transfers back to the true code simulator.
+
+Snake works as a sanity check. A one-frame event world model is good enough for PPO to train a CNN policy that transfers to the real Snake simulator.
+
+![Animated Snake simulator versus world-model rollout](images/wm_vs_sim_rollout.gif)
 
 ![World-model rollout grid](images/wm_vs_sim_rollout.png)
+
+Pac-Man is harder. A tiny Pac-Man world model is exploitable even with hard `argmax` rewards: hallucinated evaluation reports about 244 pellets, while real random-map evaluation collects about 1.6 pellets. Larger world models remove most of the hallucinated reward explosion, but still do not train a strong transferred Pac-Man policy.
+
+![Pac-Man random map](images/pacman_random_map.png)
+
+![Pac-Man tiny world-model rollout](images/pacman_wm_vs_sim_rollout.png)
+
+![Pac-Man 2M world-model rollout](images/pacman_wm2_vs_sim_rollout.png)
 
 ## Interactive world-model UI
 
@@ -89,15 +108,53 @@ snake-train-cnn-agent \
   --wandb-mode online
 ```
 
+Pac-Man uses the same event-model pipeline:
+
+```bash
+pacman-generate-data \
+  --out runs/datasets/pacman_random_30k \
+  --max-transitions 30000 \
+  --random-map
+```
+
+```bash
+snake-train-wm \
+  --dataset runs/datasets/pacman_random_30k \
+  --out runs/pacman_argmax_matrix/world_models/wm_2m \
+  --variant wm_2m \
+  --steps 16000 \
+  --batch-size 16 \
+  --wandb-mode online
+```
+
+```bash
+snake-train-cnn-agent \
+  --dataset runs/datasets/pacman_random_30k \
+  --world-model runs/pacman_argmax_matrix/world_models/wm_2m/latest.pt \
+  --out runs/pacman_argmax_matrix/policies/wm_2m_small_hard \
+  --policy small \
+  --updates 180 \
+  --reward-decoder hard \
+  --wandb-mode online
+```
+
+```bash
+pacman-evaluate-policy \
+  --policy runs/pacman_argmax_matrix/policies/wm_2m_small_hard/latest.pt \
+  --out runs/pacman_argmax_matrix/evals/wm_2m_small_hard_real_random \
+  --mode real \
+  --random-map
+```
+
 ## Results at a glance
 
 World-model drift matters more than one-step frame loss alone. The policy optimizer can discover mistakes that are not obvious from static validation metrics.
 
 ![World-model drift curve](images/wm_drift_curve.png)
 
-The paper compares hallucinated training performance against real-simulator evaluation across world-model size, context length, policy size, and reward objective.
+The paper compares hallucinated training performance against real-simulator evaluation under the hard event-reward interface.
 
-![Objective scatter](images/objective_scatter.png)
+![Pac-Man transfer plot](images/pacman_argmax_transfer.png)
 
 ## Repo layout
 
@@ -112,6 +169,10 @@ Large generated artifacts are intentionally not committed. Checkpoints, datasets
 
 ## W&B
 
-Event-model project:
+Snake event-model project:
 
 <https://wandb.ai/anothervibecoder-i-unemplyed/snake-hallucinated-worlds-event>
+
+Pac-Man event-model project:
+
+<https://wandb.ai/anothervibecoder-i-unemplyed/snake-hallucinated-worlds-pacman>
