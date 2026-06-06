@@ -102,7 +102,7 @@ After training, the same CNN policy is evaluated in the true simulator without m
 Snake provides the basic sanity check: can a CNN trained only in a learned visual world transfer when the reward interface is discrete and faithful to the real simulator?
 Table~\ref{tab:snake-random} summarizes the main argmax-event result on fixed and randomized layouts.
 The key observation is that frozen learned-world training transfers immediately under the hard event interface.
-This makes grounding unnecessary for this setting.
+No additional real-rollout fine-tuning is needed for this setting.
 
 \begin{table}[t]
   \centering
