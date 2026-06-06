@@ -101,15 +101,20 @@ class PacmanEnv:
 
     def _move_ghosts(self) -> None:
         new_ghosts = []
+        current_ghosts = set(self.ghosts)
+        occupied: set[tuple[int, int]] = set()
         for ghost in self.ghosts:
             candidates = []
+            blocked_ghosts = (current_ghosts - {ghost}) | occupied
             for action, (dx, dy) in enumerate(ACTION_VECTORS):
                 nxt = pt(ghost[0] + int(dx), ghost[1] + int(dy))
-                if not self._blocked(nxt):
+                if not self._blocked(nxt) and nxt not in blocked_ghosts:
                     dist = abs(nxt[0] - self.player[0]) + abs(nxt[1] - self.player[1])
                     candidates.append((dist, action, nxt))
             candidates.sort()
-            new_ghosts.append(candidates[0][2] if candidates else ghost)
+            chosen = candidates[0][2] if candidates else ghost
+            new_ghosts.append(chosen)
+            occupied.add(chosen)
         self.ghosts = new_ghosts
 
     def step(self, action: int) -> PacmanStep:
@@ -158,4 +163,3 @@ class PacmanEnv:
         x1 = (cell[0] + 1) * SCALE - inset
         y1 = (cell[1] + 1) * SCALE - inset
         img[y0:y1, x0:x1] = color
-
