@@ -145,6 +145,20 @@ No floating-point reward head or length head is used for control.
   \label{tab:pacman}
 \end{table}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.78\linewidth]{figures/pacman_argmax_transfer.png}
+  \caption{Pac-Man real-simulator transfer after training the CNN inside each frozen argmax-event world model. The red markers show death rate.}
+  \label{fig:pacman-transfer}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/pacman_wm_vs_sim_rollout.png}
+  \caption{Pac-Man dataset frames compared with an autoregressive tiny-world-model rollout under the same action sequence. The tiny model reconstructs local visual structure but drifts over several steps.}
+  \label{fig:pacman-rollout}
+\end{figure}
+
 The intended interpretation is capacity-based.
 If a tiny world model produces high hallucinated pellet reward but poor real-simulator pellet reward, then the policy has found a model-specific strategy even under discrete rewards.
 If larger world models reduce this transfer gap, then model capacity improves not only frame prediction but also the policy-relevant event dynamics.
