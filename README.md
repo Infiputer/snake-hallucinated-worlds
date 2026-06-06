@@ -8,13 +8,17 @@ This repo is a small, visual world-model research project. We train a Snake vide
 
 ![Snake simulator sequence](images/snake_environment_sequence.png)
 
+![Animated simulator versus world-model rollout](images/wm_vs_sim_rollout.gif)
+
 ## What this is
 
 The world model sees a `128 x 128 x 3` RGB Snake frame and an action. It predicts the next frame plus two discrete events: whether the snake ate an apple and whether it died.
 
 The point is not that Snake is hard. The point is that learned environments can be exploitable. A policy can look good inside the world model while failing in the real simulator, so we measure that hallucinated-vs-real transfer gap directly.
 
-![World-model rollout versus simulator](images/wm_vs_sim_rollout.png)
+The GIF above shows the same action sequence rolled through the real simulator and the learned world model. The bottom row highlights drift as the rollout gets longer.
+
+![World-model rollout grid](images/wm_vs_sim_rollout.png)
 
 ## Interactive world-model UI
 
