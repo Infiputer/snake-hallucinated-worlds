@@ -18,6 +18,28 @@ EVAL_EPISODES="${EVAL_EPISODES:-100}"
 
 mkdir -p "$OUT_ROOT"
 
+wm_done() {
+  local wm_dir="$1"
+  local target_steps="$2"
+  python3 - "$wm_dir" "$target_steps" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+wm_dir = Path(sys.argv[1])
+target = int(sys.argv[2])
+latest = wm_dir / "latest.pt"
+val = wm_dir / "latest_val.json"
+if not latest.exists() or not val.exists():
+    raise SystemExit(1)
+try:
+    step = int(json.loads(val.read_text()).get("step", 0))
+except Exception:
+    raise SystemExit(1)
+raise SystemExit(0 if step >= target else 1)
+PY
+}
+
 if [ ! -f "$DATASET/dataset_meta.json" ]; then
   python3 -m snake_wm_v2.generate_pacman_dataset \
     --episodes 1200 \
@@ -36,7 +58,7 @@ run_cell() {
   local hall_eval="$OUT_ROOT/evals/${variant}_small_hard_hall"
   local real_eval="$OUT_ROOT/evals/${variant}_small_hard_real_random"
 
-  if [ ! -f "$wm_dir/latest.pt" ]; then
+  if ! wm_done "$wm_dir" "$wm_steps"; then
     python3 -m snake_wm_v2.train_event_world_model \
       --dataset "$DATASET" \
       --out "$wm_dir" \
@@ -111,3 +133,7 @@ for path in sorted(root.glob("*/summary.json")):
     })
 print(json.dumps(rows, indent=2))
 PY
+
+python3 -m snake_wm_v2.export_argmax_paper_assets \
+  --paper papers \
+  --pacman-evals "../../snake_wm_v2/runs/pacman_argmax_matrix/evals"
