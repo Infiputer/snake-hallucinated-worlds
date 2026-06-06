@@ -1,4 +1,0 @@
-iteration,seed_world_model,seed_context,policy,collected_transitions,total_policy_collected_transitions,hallucinated_return,real_return,gap,real_apples,real_death_rate,world_model_dir,policy_dir
-1,wm_2m,5,small,1000,1000,-0.02361381784081459,-1.0,0.9763861821591854,0.0,1.0,runs/focused_v2/grounding/world_models/iter_01_wm_2m_ctx5,runs/focused_v2/grounding/policies/iter_01_small
-2,wm_2m,5,small,440,1440,-8.299851254057138,0.0,-8.299851254057138,1.0,1.0,runs/focused_v2/grounding/world_models/iter_02_wm_2m_ctx5,runs/focused_v2/grounding/policies/iter_02_small
-3,wm_2m,5,small,1000,2440,1.0730110530368984,0.0,1.0730110530368984,1.0,1.0,runs/focused_v2/grounding/world_models/iter_03_wm_2m_ctx5,runs/focused_v2/grounding/policies/iter_03_small
